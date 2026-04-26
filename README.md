@@ -18,15 +18,15 @@ The baseline is inspired by classic eye-tracking event detection ideas:
 ## Recommended environment
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
+conda create --name eye-gesture-identification python=3.11
+conda activate eye_gesture
 pip install -r requirements.txt
 ```
 
 ## Run
 
 ```bash
- python evaluate.py
+ PYTHONPATH=src python evaluate.py
 ```
 
 ## Notes
