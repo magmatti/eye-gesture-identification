@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable
-
 import pandas as pd
+
+SUPPORTED_LABELS = {"blink", "fixation", "saccade"}
 
 
 def expected_label_from_filename(path: str | Path) -> str:
-    """Infer the expected gesture label from the CSV filename."""
     name = Path(path).name.lower()
     if "blinkdata" in name:
         return "blink"
@@ -15,8 +14,6 @@ def expected_label_from_filename(path: str | Path) -> str:
         return "fixation"
     if "saccadedata" in name:
         return "saccade"
-    if "smoothpursuitdata" in name:
-        return "smooth_pursuit"
     return "unknown"
 
 
@@ -24,9 +21,9 @@ def collect_csv_files(data_dir: str | Path, include_legacy: bool = False) -> lis
     """Collect CSV files from the project data directory."""
     data_dir = Path(data_dir)
     files = sorted(data_dir.rglob("*.csv"))
-    if include_legacy:
-        return files
-    return [p for p in files if "legacy" not in p.parts]
+    if not include_legacy:
+        files = [p for p in files if "legacy" not in p.parts]
+    return [p for p in files if expected_label_from_filename(p) in SUPPORTED_LABELS]
 
 
 def load_trial_csv(path: str | Path) -> pd.DataFrame:

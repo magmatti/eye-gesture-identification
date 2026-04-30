@@ -4,20 +4,20 @@ from pathlib import Path
 
 import pandas as pd
 
-from .io_utils import collect_csv_files, load_trial_csv, ensure_time_ms
-from .signal_utils import add_gaze_features, add_target_features
-from .detectors.blink import detect_blinks, summarize_blinks
-from .detectors.fixation_saccade import detect_fixations_and_saccades, summarize_fixations_and_saccades
-from .detectors.smooth_pursuit import detect_smooth_pursuit
+from detectors.blink import detect_blinks, summarize_blinks
+from detectors.fixation_saccade import detect_fixations_and_saccades, summarize_fixations_and_saccades
+from io_utils import collect_csv_files, ensure_time_ms, load_trial_csv
+from signal_utils import add_gaze_features
 
 
-DEFAULT_DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "raw" / "latest"
-DEFAULT_REPORT_PATH = Path(__file__).resolve().parents[2] / "reports" / "rule_based_results.csv"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_DATA_DIR = PROJECT_ROOT / "data"
+DEFAULT_REPORT_PATH = PROJECT_ROOT / "reports" / "rule_based_results.csv"
 
 
 def analyze_trial(path: str | Path) -> dict[str, object]:
     raw = ensure_time_ms(load_trial_csv(path))
-    df = add_target_features(add_gaze_features(raw))
+    df = add_gaze_features(raw)
 
     df, blink_events = detect_blinks(df)
     blink_summary = summarize_blinks(df, blink_events)
@@ -25,9 +25,7 @@ def analyze_trial(path: str | Path) -> dict[str, object]:
     df, fix_events, sac_events = detect_fixations_and_saccades(df)
     fix_sac_summary = summarize_fixations_and_saccades(df, fix_events, sac_events)
 
-    df, pursuit_summary = detect_smooth_pursuit(df)
-
-    predicted = classify_trial_rule_based(df, blink_summary, fix_sac_summary, pursuit_summary)
+    predicted = classify_trial_rule_based(df, blink_summary, fix_sac_summary)
     expected = raw.attrs.get("expected_label", "unknown")
 
     result: dict[str, object] = {
@@ -38,7 +36,6 @@ def analyze_trial(path: str | Path) -> dict[str, object]:
         "n_samples": len(df),
         **blink_summary,
         **fix_sac_summary,
-        **pursuit_summary,
     }
     return result
 
@@ -47,7 +44,6 @@ def classify_trial_rule_based(
     df: pd.DataFrame,
     blink_summary: dict[str, float],
     fix_sac_summary: dict[str, float],
-    pursuit_summary: dict[str, float],
 ) -> str:
     """Classify an entire controlled trial into one gesture label.
 
@@ -57,16 +53,15 @@ def classify_trial_rule_based(
     if blink_summary["blink_peak_max"] >= 0.60 and blink_summary["blink_event_count"] >= 1:
         return "blink"
 
-    # Smooth pursuit: continuous target + large pursuit fraction + good correlation.
+    # Saccade: high-speed bursts or repeated fast gaze movement.
     if (
-        pursuit_summary.get("target_profile") == "continuous"
-        and pursuit_summary["pursuit_sample_fraction"] >= 0.18
-        and pursuit_summary["pursuit_corr_median"] >= 0.70
+        fix_sac_summary["saccade_event_count"] >= 1
+        or (
+            fix_sac_summary["high_speed_sample_fraction"] >= 0.010
+            and fix_sac_summary["dispersion_q95"] >= 2.0
+            and fix_sac_summary["speed_q75"] >= 5.6
+        )
     ):
-        return "smooth_pursuit"
-
-    # Saccade: jump target profile OR large saccade peaks with more dispersion than fixation.
-    if pursuit_summary.get("target_profile") == "jump":
         return "saccade"
 
     # Pure fixation trials should have low sustained speed and large fixation fraction.
@@ -77,11 +72,6 @@ def classify_trial_rule_based(
     ):
         return "fixation"
 
-    # Fallbacks for noisy cases.
-    if fix_sac_summary["speed_q75"] >= 40.0:
-        return "smooth_pursuit"
-    if fix_sac_summary["speed_q99"] >= 120.0:
-        return "saccade"
     return "fixation"
 
 

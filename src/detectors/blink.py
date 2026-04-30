@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from ..signal_utils import contiguous_true_segments, segment_duration_ms
+from signal_utils import contiguous_true_segments, segment_duration_ms
 
 
 @dataclass(slots=True)

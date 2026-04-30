@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from .quaternion_utils import apply_unity_quaternions, vectors_to_yaw_pitch_deg, angular_distance_deg, wrap_signed_deg
+from quaternion_utils import apply_unity_quaternions, vectors_to_yaw_pitch_deg, angular_distance_deg
 
 
 def add_dt_seconds(df: pd.DataFrame) -> pd.DataFrame:
@@ -62,26 +62,6 @@ def add_gaze_features(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def add_target_features(df: pd.DataFrame) -> pd.DataFrame:
-    out = df.copy()
-    if "Time_ms" not in out.columns:
-        return out
-    if "dt_s" not in out.columns:
-        out = add_dt_seconds(out)
-
-    if "TargetRotY" in out.columns:
-        out["target_yaw_deg"] = wrap_signed_deg(out["TargetRotY"].to_numpy(dtype=float))
-        out["target_yaw_speed_deg_s"] = out["target_yaw_deg"].diff() / out["dt_s"]
-    if "TargetRotX" in out.columns:
-        out["target_pitch_deg"] = wrap_signed_deg(out["TargetRotX"].to_numpy(dtype=float))
-        out["target_pitch_speed_deg_s"] = out["target_pitch_deg"].diff() / out["dt_s"]
-
-    if "target_yaw_deg" in out.columns:
-        rounded_unique = pd.Series(out["target_yaw_deg"]).round(2).nunique()
-        out.attrs["target_unique_count"] = int(rounded_unique)
-    return out
-
-
 def rolling_dispersion_2d(x: pd.Series | np.ndarray, y: pd.Series | np.ndarray, window: int = 8) -> np.ndarray:
     x_arr = np.asarray(x, dtype=float)
     y_arr = np.asarray(y, dtype=float)
@@ -92,21 +72,6 @@ def rolling_dispersion_2d(x: pd.Series | np.ndarray, y: pd.Series | np.ndarray, 
         y_slice = y_arr[start: idx + 1]
         out[idx] = (np.nanmax(x_slice) - np.nanmin(x_slice)) + (np.nanmax(y_slice) - np.nanmin(y_slice))
     return out
-
-
-def moving_correlation(a: pd.Series, b: pd.Series, window: int = 15) -> pd.Series:
-    return a.rolling(window=window, min_periods=max(3, window // 2)).corr(b)
-
-
-def moving_gain(gaze_speed: pd.Series, target_speed: pd.Series, window: int = 15) -> pd.Series:
-    """Smooth pursuit gain = gaze speed / target speed.
-
-    We use absolute speeds here because this baseline focuses on how well the eye follows the target magnitude.
-    """
-    gaze_abs = gaze_speed.abs().rolling(window=window, min_periods=max(3, window // 2)).median()
-    target_abs = target_speed.abs().rolling(window=window, min_periods=max(3, window // 2)).median()
-    gain = gaze_abs / target_abs.replace(0.0, np.nan)
-    return gain
 
 
 def contiguous_true_segments(mask: np.ndarray) -> list[tuple[int, int]]:

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from ..signal_utils import contiguous_true_segments, segment_duration_ms
+from signal_utils import contiguous_true_segments, segment_duration_ms
 
 
 @dataclass(slots=True)
@@ -96,6 +96,7 @@ def summarize_fixations_and_saccades(df: pd.DataFrame, fix_events: pd.DataFrame,
         "saccade_event_count": float(len(sac_events)),
         "fixation_sample_fraction": fixation_fraction,
         "saccade_sample_fraction": saccade_fraction,
+        "high_speed_sample_fraction": float((speed >= 80.0).mean()) if len(speed) else 0.0,
         "speed_q50": float(speed.quantile(0.50)) if len(speed) else 0.0,
         "speed_q75": float(speed.quantile(0.75)) if len(speed) else 0.0,
         "speed_q90": float(speed.quantile(0.90)) if len(speed) else 0.0,
