@@ -45,15 +45,9 @@ def classify_trial_rule_based(
     blink_summary: dict[str, float],
     fix_sac_summary: dict[str, float],
 ) -> str:
-    """Classify an entire controlled trial into one gesture label.
-
-    This is intentionally simple and transparent.
-    The rules are chosen so you can explain them in the thesis.
-    """
     if blink_summary["blink_peak_max"] >= 0.60 and blink_summary["blink_event_count"] >= 1:
         return "blink"
 
-    # Saccade: high-speed bursts or repeated fast gaze movement.
     if (
         fix_sac_summary["saccade_event_count"] >= 1
         or (
@@ -64,7 +58,6 @@ def classify_trial_rule_based(
     ):
         return "saccade"
 
-    # Pure fixation trials should have low sustained speed and large fixation fraction.
     if (
         fix_sac_summary["fixation_sample_fraction"] >= 0.45
         and fix_sac_summary["speed_q75"] <= 15.0
