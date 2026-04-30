@@ -6,27 +6,10 @@ import numpy as np
 import pandas as pd
 
 from signal_utils import contiguous_true_segments, segment_duration_ms
-
-
-@dataclass(slots=True)
-class FixationSaccadeConfig:
-    fixation_speed_threshold_deg_s: float = 30.0
-    fixation_dispersion_threshold_deg: float = 2.5
-    fixation_min_duration_ms: float = 100.0
-    saccade_speed_threshold_deg_s: float = 120.0
-    saccade_min_duration_ms: float = 20.0
-    saccade_max_duration_ms: float = 120.0
+from models.fixation_saccade_config import FixationSaccadeConfig
 
 
 def detect_fixations_and_saccades(df: pd.DataFrame, cfg: FixationSaccadeConfig | None = None) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Detect fixations and saccades from local eye rotations.
-
-    Fixation logic:
-        low speed + low dispersion + minimum duration
-
-    Saccade logic:
-        high speed burst + plausible duration
-    """
     cfg = cfg or FixationSaccadeConfig()
     out = df.copy()
 

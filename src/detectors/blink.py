@@ -6,23 +6,11 @@ import numpy as np
 import pandas as pd
 
 from signal_utils import contiguous_true_segments, segment_duration_ms
+from models.blink_config import BlinkConfig
 
 
-@dataclass(slots=True)
-class BlinkDetectorConfig:
-    onset_threshold: float = 0.60
-    offset_threshold: float = 0.20
-    min_duration_ms: float = 50.0
-    max_duration_ms: float = 500.0
-
-
-def detect_blinks(df: pd.DataFrame, cfg: BlinkDetectorConfig | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Detect blinks using a simple hysteresis rule.
-
-    Start a blink when the average blink weight goes above the high threshold,
-    and end it when it falls below the low threshold.
-    """
-    cfg = cfg or BlinkDetectorConfig()
+def detect_blinks(df: pd.DataFrame, cfg: BlinkConfig | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
+    cfg = cfg or BlinkConfig()
     out = df.copy()
 
     required = {"Time_ms", "LeftBlinkWeight", "RightBlinkWeight"}
