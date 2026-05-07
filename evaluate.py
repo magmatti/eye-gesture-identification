@@ -1,4 +1,4 @@
-from pipeline import evaluate_dataset
+from src.analyze import main
 
 if __name__ == "__main__":
-    evaluate_dataset()
+    main()
