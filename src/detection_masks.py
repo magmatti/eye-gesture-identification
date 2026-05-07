@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from .config import DetectionConfig
+from .detection_config import DetectionConfig
 
 
 # lables samples in the recording as one of 3 gestures or none using selected threshold values
