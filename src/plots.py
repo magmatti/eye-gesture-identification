@@ -1,0 +1,148 @@
+from __future__ import annotations
+
+import os
+import tempfile
+from pathlib import Path
+
+os.environ.setdefault("MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "eye_gesture_matplotlib"))
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from .detection_config import DetectionConfig
+
+
+def plot_gaze_speed(
+    df: pd.DataFrame,
+    cfg: DetectionConfig,
+    output_path: Path | None = None,
+):
+    fig, ax = plt.subplots(figsize=(12, 4))
+    _plot_series(ax, df, "gaze_speed_deg_s", "Gaze speed", alpha=0.45)
+    _plot_series(ax, df, "gaze_speed_smooth_deg_s", "Smoothed gaze speed", linewidth=2)
+    ax.axhline(
+        cfg.fixation_speed_threshold_deg_s,
+        linestyle="--",
+        label="Fixation threshold",
+    )
+    ax.axhline(
+        cfg.saccade_speed_threshold_deg_s,
+        linestyle="--",
+        label="Saccade threshold",
+    )
+    ax.set_title(_title(df, "Gaze speed"))
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Speed [deg/s]")
+    ax.grid(alpha=0.3)
+    _legend_if_needed(ax)
+    return _save_or_return(fig, ax, output_path)
+
+
+def plot_blink_signal(
+    df: pd.DataFrame,
+    cfg: DetectionConfig,
+    output_path: Path | None = None,
+):
+    fig, ax = plt.subplots(figsize=(12, 4))
+    if "LeftBlinkWeight" in df.columns:
+        ax.plot(df["Time_s"], df["LeftBlinkWeight"], label="Left blink weight", alpha=0.5)
+    if "RightBlinkWeight" in df.columns:
+        ax.plot(df["Time_s"], df["RightBlinkWeight"], label="Right blink weight", alpha=0.5)
+    _plot_series(ax, df, "blink_avg", "Blink average", linewidth=2)
+    ax.axhline(cfg.blink_threshold, linestyle="--", label="Blink threshold")
+    ax.set_title(_title(df, "Blink signal"))
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Blink weight")
+    ax.set_ylim(-0.05, 1.05)
+    ax.grid(alpha=0.3)
+    _legend_if_needed(ax)
+    return _save_or_return(fig, ax, output_path)
+
+
+def plot_combined_overview(
+    df: pd.DataFrame,
+    cfg: DetectionConfig,
+    output_path: Path | None = None,
+):
+    fig, axes = plt.subplots(2, 1, figsize=(12, 7), sharex=True)
+    speed_ax, blink_ax = axes
+
+    _plot_series(speed_ax, df, "gaze_speed_smooth_deg_s", "Smoothed gaze speed", linewidth=1.5)
+    speed_ax.axhline(cfg.fixation_speed_threshold_deg_s, linestyle="--", label="Fixation")
+    speed_ax.axhline(cfg.saccade_speed_threshold_deg_s, linestyle="--", label="Saccade")
+    speed_ax.set_ylabel("Speed [deg/s]")
+    speed_ax.grid(alpha=0.3)
+    _legend_if_needed(speed_ax)
+
+    _plot_series(blink_ax, df, "blink_avg", "Blink average", linewidth=1.5)
+    blink_ax.axhline(cfg.blink_threshold, linestyle="--", label="Blink")
+    blink_ax.set_xlabel("Time [s]")
+    blink_ax.set_ylabel("Blink weight")
+    blink_ax.set_ylim(-0.05, 1.05)
+    blink_ax.grid(alpha=0.3)
+    _legend_if_needed(blink_ax)
+
+    fig.suptitle(_title(df, "Threshold overview"))
+    return _save_or_return(fig, axes, output_path)
+
+
+def plot_detected_events(
+    df: pd.DataFrame,
+    events: pd.DataFrame,
+    cfg: DetectionConfig,
+    output_path: Path | None = None,
+):
+    fig, ax = plt.subplots(figsize=(12, 4))
+    _plot_series(ax, df, "gaze_speed_smooth_deg_s", "Smoothed gaze speed", linewidth=1.5)
+    if "blink_avg" in df.columns:
+        ax.plot(
+            df["Time_s"],
+            df["blink_avg"] * cfg.saccade_speed_threshold_deg_s,
+            label="Blink average scaled",
+            alpha=0.6,
+        )
+
+    colors = {"blink": "tab:red", "saccade": "tab:orange", "fixation": "tab:green"}
+    for _, event in events.iterrows():
+        ax.axvspan(
+            event["start_time_s"],
+            event["end_time_s"],
+            color=colors.get(event["gesture"], "tab:gray"),
+            alpha=0.16,
+        )
+
+    ax.axhline(cfg.fixation_speed_threshold_deg_s, linestyle="--", label="Fixation threshold")
+    ax.axhline(cfg.saccade_speed_threshold_deg_s, linestyle="--", label="Saccade threshold")
+    ax.set_title(_title(df, "Detected events"))
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Speed [deg/s]")
+    ax.grid(alpha=0.3)
+    _legend_if_needed(ax)
+    return _save_or_return(fig, ax, output_path)
+
+
+def _save_or_return(fig, ax, output_path: Path | None):
+    if output_path is not None:
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(output_path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+    return fig, ax
+
+
+def _plot_series(ax, df: pd.DataFrame, column: str, label: str, **kwargs) -> None:
+    if column not in df.columns or df[column].dropna().empty:
+        return
+    ax.plot(df["Time_s"], df[column], label=label, **kwargs)
+
+
+def _legend_if_needed(ax) -> None:
+    handles, labels = ax.get_legend_handles_labels()
+    if handles and labels:
+        ax.legend()
+
+
+def _title(df: pd.DataFrame, prefix: str) -> str:
+    if "source_file" in df.columns and len(df):
+        return f"{prefix} - {df['source_file'].iloc[0]}"
+    return prefix
