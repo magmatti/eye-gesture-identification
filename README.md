@@ -47,5 +47,5 @@ If a `data/` folder already exists, the script renames it to `dataset_YYYYMMDD_H
 ## Run project
 
 ```bash
-python -m src.analyze --data data --output reports
+python -m src.analyze
 ```
