@@ -8,7 +8,7 @@ import pandas as pd
 from .blink_signal import add_blink_signal, has_blink_columns
 from .detection_config import DetectionConfig
 from .detection_masks import add_detection_masks
-from .gesture_events import (
+from .event_detection import (
     EVENT_COLUMNS,
     detect_all_events,
     summarize_events_by_file,
