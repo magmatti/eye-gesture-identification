@@ -11,6 +11,7 @@ from .detection_masks import add_detection_masks
 from .event_detection import (
     EVENT_COLUMNS,
     detect_all_events,
+    summarize_event_counts_by_file,
     summarize_events_by_file,
     summarize_events_by_gesture,
 )
@@ -85,6 +86,10 @@ def run_analysis(cfg: DetectionConfig | None = None) -> pd.DataFrame:
         else pd.DataFrame(columns=EVENT_COLUMNS)
     )
     events_df.to_csv(events_dir / "all_events.csv", index=False)
+    summarize_event_counts_by_file(events_df).to_csv(
+        events_dir / "event_counts_by_file.csv",
+        index=False,
+    )
     summarize_events_by_file(events_df).to_csv(
         events_dir / "event_summary_by_file.csv",
         index=False,
@@ -96,11 +101,24 @@ def run_analysis(cfg: DetectionConfig | None = None) -> pd.DataFrame:
     return events_df
 
 
-# run analysis and print a short summary
+def print_report_table(label: str, path: Path) -> None:
+    print(label)
+    print()
+    print(pd.read_csv(path).to_string(index=False))
+    print()
+
+
+# run analysis and print generated event reports
 def main() -> pd.DataFrame:
     events = run_analysis(DetectionConfig())
-    print(f"Saved processed files and reports to: {REPORTS_DIR}")
-    print(f"Detected events: {len(events)}")
+    events_dir = REPORTS_DIR / "events"
+    for label, filename in [
+        ("event counts by file", "event_counts_by_file.csv"),
+        ("event summary by file", "event_summary_by_file.csv"),
+        ("event summary by gesture", "event_summary_by_gesture.csv"),
+        ("all events", "all_events.csv"),
+    ]:
+        print_report_table(label, events_dir / filename)
     return events
 
 

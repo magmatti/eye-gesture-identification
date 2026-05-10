@@ -148,6 +148,33 @@ def summarize_events_by_file(events: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def summarize_event_counts_by_file(events: pd.DataFrame) -> pd.DataFrame:
+    columns = ["filename", "blink_count", "fixation_count", "saccade_count"]
+    if events.empty:
+        return pd.DataFrame(columns=columns)
+
+    summary = (
+        events.groupby(["source_file", "gesture"], dropna=False)
+        .size()
+        .unstack(fill_value=0)
+        .reset_index()
+        .rename(columns={"source_file": "filename"})
+    )
+
+    for gesture in ["blink", "fixation", "saccade"]:
+        if gesture not in summary.columns:
+            summary[gesture] = 0
+
+    summary = summary.rename(
+        columns={
+            "blink": "blink_count",
+            "fixation": "fixation_count",
+            "saccade": "saccade_count",
+        }
+    )
+    return summary[columns].sort_values("filename").reset_index(drop=True)
+
+
 def summarize_events_by_gesture(events: pd.DataFrame) -> pd.DataFrame:
     if events.empty:
         return pd.DataFrame(
