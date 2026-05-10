@@ -16,6 +16,10 @@ The project detects eye gesture events inside recordings with a threshold-based 
 
 ## Create environment
 
+If you do not have `conda` installed, install Miniconda first:
+
+https://docs.conda.io/en/latest/miniconda.html
+
 ```bash
 conda create --name eye-gesture-identification python=3.11
 conda activate eye-gesture-identification
