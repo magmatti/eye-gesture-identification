@@ -16,9 +16,7 @@ The project detects eye gesture events inside recordings with a threshold-based 
 
 ## Install uv
 
-Use official documentation:
-
-https://docs.astral.sh/uv/getting-started/installation/
+Use official documentation: [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/)
 
 Or if on macOS with homebrew installed:
 
@@ -40,7 +38,7 @@ The `collect_data.sh` script pulls saved `.csv` recordings from a connected Meta
 
 Before using it:
 
-1. Install and configure `adb`: https://developer.android.com/tools/adb
+1. Install and configure `adb`: [Android Debug Bridge (adb) documentation](https://developer.android.com/tools/adb)
 2. Connect the headset and allow USB debugging.
 3. Make the script executable:
 
@@ -55,6 +53,20 @@ Run it from the project root:
 ```
 
 If a `data/` folder already exists, the script renames it to `dataset_YYYYMMDD_HHMMSS` before creating a fresh `data/` folder.
+
+List the recorded `.csv` files stored by the application on the headset:
+
+```bash
+./list_data.sh
+```
+
+Delete those `.csv` files:
+
+```bash
+./delete_data.sh
+```
+
+The delete script asks for confirmation before removing.
 
 ## Run project
 
