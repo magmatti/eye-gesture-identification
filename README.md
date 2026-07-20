@@ -14,16 +14,24 @@ The project detects eye gesture events inside recordings with a threshold-based 
 6. Extracts and counts detected gesture events.
 7. Saves processed CSVs, event tables, summaries, and plots.
 
-## Create environment
+## Install uv
 
-If you do not have `conda` installed, install Miniconda first:
+Use official documentation:
 
-https://docs.conda.io/en/latest/miniconda.html
+https://docs.astral.sh/uv/getting-started/installation/
+
+Or if on macOS with homebrew installed:
 
 ```bash
-conda create --name eye-gesture-identification python=3.11
-conda activate eye-gesture-identification
-pip install -r requirements.txt
+brew install uv
+```
+
+## Set up the project
+
+From the project root, synchronize the environment:
+
+```bash
+uv sync
 ```
 
 ## Collect data
@@ -51,5 +59,5 @@ If a `data/` folder already exists, the script renames it to `dataset_YYYYMMDD_H
 ## Run project
 
 ```bash
-python -m src.analyze
+uv run -m src.analyze
 ```
