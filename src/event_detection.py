@@ -47,12 +47,9 @@ def find_events(
     min_duration_ms: float,
     max_duration_ms: float | None = None,
 ) -> pd.DataFrame:
-    if mask_column not in df.columns or "Time_s" not in df.columns:
-        return pd.DataFrame(columns=EVENT_COLUMNS)
-
     rows = []
     phase = _phase_value(df)
-    source_file = _first_value(df, "source_file", "unknown")
+    source_file = str(df["source_file"].iloc[0]) if len(df) else "unknown"
 
     for start, end in contiguous_true_segments(df[mask_column].fillna(False).to_numpy()):
         start_time_s = float(df["Time_s"].iloc[start])
@@ -218,27 +215,14 @@ def _find_events_with_trim(
 # pick the most useful signal value for reporting a detected event
 def _peak_value(df: pd.DataFrame, gesture_name: str) -> float:
     if gesture_name == "blink":
-        return float(df["blink_avg"].max()) if "blink_avg" in df.columns else np.nan
+        return float(df["blink_avg"].max())
     if gesture_name == "fixation":
-        return (
-            float(df["gaze_speed_smooth_deg_s"].mean())
-            if "gaze_speed_smooth_deg_s" in df.columns
-            else np.nan
-        )
-    return (
-        float(df["gaze_speed_smooth_deg_s"].max())
-        if "gaze_speed_smooth_deg_s" in df.columns
-        else np.nan
-    )
+        return float(df["gaze_speed_smooth_deg_s"].mean())
+    return float(df["gaze_speed_smooth_deg_s"].max())
 
 
+# combined recordings carry a Phase column, single-gesture recordings do not
 def _phase_value(df: pd.DataFrame) -> str:
     if "Phase" in df.columns and len(df):
         return str(df["Phase"].iloc[0])
     return "recording"
-
-
-def _first_value(df: pd.DataFrame, column: str, default: str) -> str:
-    if column not in df.columns or df.empty:
-        return default
-    return str(df[column].iloc[0])

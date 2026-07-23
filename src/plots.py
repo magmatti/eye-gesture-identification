@@ -1,22 +1,12 @@
 from __future__ import annotations
 
-import os
-import tempfile
-from pathlib import Path
-
-os.environ.setdefault("MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "eye_gesture_matplotlib"))
-
 import matplotlib.pyplot as plt
 import pandas as pd
 
 from .detection_config import DetectionConfig
 
 
-def plot_gaze_speed(
-    df: pd.DataFrame,
-    cfg: DetectionConfig,
-    output_path: Path | None = None,
-):
+def plot_gaze_speed(df: pd.DataFrame, cfg: DetectionConfig):
     fig, ax = plt.subplots(figsize=(12, 4))
     _plot_series(ax, df, "gaze_speed_deg_s", "Gaze speed", alpha=0.45)
     _plot_series(ax, df, "gaze_speed_smooth_deg_s", "Smoothed gaze speed", linewidth=2)
@@ -35,14 +25,10 @@ def plot_gaze_speed(
     ax.set_ylabel("Speed [deg/s]")
     ax.grid(alpha=0.3)
     _legend_if_needed(ax)
-    return _save_or_return(fig, ax, output_path)
+    return fig, ax
 
 
-def plot_blink_signal(
-    df: pd.DataFrame,
-    cfg: DetectionConfig,
-    output_path: Path | None = None,
-):
+def plot_blink_signal(df: pd.DataFrame, cfg: DetectionConfig):
     fig, ax = plt.subplots(figsize=(12, 4))
     if "LeftBlinkWeight" in df.columns:
         ax.plot(df["Time_s"], df["LeftBlinkWeight"], label="Left blink weight", alpha=0.5)
@@ -56,14 +42,10 @@ def plot_blink_signal(
     ax.set_ylim(-0.05, 1.05)
     ax.grid(alpha=0.3)
     _legend_if_needed(ax)
-    return _save_or_return(fig, ax, output_path)
+    return fig, ax
 
 
-def plot_combined_overview(
-    df: pd.DataFrame,
-    cfg: DetectionConfig,
-    output_path: Path | None = None,
-):
+def plot_combined_overview(df: pd.DataFrame, cfg: DetectionConfig):
     fig, axes = plt.subplots(2, 1, figsize=(12, 7), sharex=True)
     speed_ax, blink_ax = axes
 
@@ -83,15 +65,10 @@ def plot_combined_overview(
     _legend_if_needed(blink_ax)
 
     fig.suptitle(_title(df, "Threshold overview"))
-    return _save_or_return(fig, axes, output_path)
+    return fig, axes
 
 
-def plot_detected_events(
-    df: pd.DataFrame,
-    events: pd.DataFrame,
-    cfg: DetectionConfig,
-    output_path: Path | None = None,
-):
+def plot_detected_events(df: pd.DataFrame, events: pd.DataFrame, cfg: DetectionConfig):
     fig, ax = plt.subplots(figsize=(12, 4))
     _plot_series(ax, df, "gaze_speed_smooth_deg_s", "Smoothed gaze speed", linewidth=1.5)
     if "blink_avg" in df.columns:
@@ -118,15 +95,6 @@ def plot_detected_events(
     ax.set_ylabel("Speed [deg/s]")
     ax.grid(alpha=0.3)
     _legend_if_needed(ax)
-    return _save_or_return(fig, ax, output_path)
-
-
-def _save_or_return(fig, ax, output_path: Path | None):
-    if output_path is not None:
-        output_path = Path(output_path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        fig.savefig(output_path, dpi=150, bbox_inches="tight")
-        plt.close(fig)
     return fig, ax
 
 

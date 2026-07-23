@@ -12,7 +12,7 @@ The project detects eye gesture events inside recordings with a threshold-based 
 4. Computes Meta blink average from left/right blink weights.
 5. Applies fixation, saccade, and blink thresholds.
 6. Extracts and counts detected gesture events.
-7. Saves processed CSVs, event tables, summaries, and plots.
+7. Saves processed CSVs, event tables, and summaries. Plots are viewed interactively in the Jupyter notebooks.
 
 ## Install uv
 

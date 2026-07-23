@@ -26,10 +26,6 @@ def has_gaze_columns(df: pd.DataFrame) -> bool:
 
 # converting left and right eye rotation quaternions into 3D gaze direction vectors
 def quaternions_to_gaze_vectors(df: pd.DataFrame) -> np.ndarray:
-    if not has_gaze_columns(df):
-        missing = [column for column in GAZE_QUATERNION_COLUMNS if column not in df.columns]
-        raise ValueError(f"Missing gaze quaternion columns: {missing}")
-
     left_quat = df[
         ["LeftLocalRotX", "LeftLocalRotY", "LeftLocalRotZ", "LeftLocalRotW"]
     ].to_numpy(dtype=float)
