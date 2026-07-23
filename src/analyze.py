@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 
 import pandas as pd
@@ -20,7 +19,6 @@ from .io_utils import collect_csv_files, load_csv, normalize_time
 
 
 DATA_DIR = Path("data")
-REPORTS_DIR = Path("reports")
 
 
 # process one recording and return enriched samples plus detected events
@@ -34,45 +32,18 @@ def analyze_file(path: Path, cfg: DetectionConfig) -> tuple[pd.DataFrame, pd.Dat
     return df, events
 
 
-# run the full analysis pipeline for every csv file in the data directory
+# analyze every csv file in the data directory and return all detected events
 def run_analysis(cfg: DetectionConfig | None = None) -> pd.DataFrame:
     cfg = cfg or DetectionConfig()
-    data_dir = DATA_DIR
-    output_dir = REPORTS_DIR
-
-    if output_dir.exists():
-        shutil.rmtree(output_dir)
-
-    processed_dir = output_dir / "processed"
-    events_dir = output_dir / "events"
-    processed_dir.mkdir(parents=True, exist_ok=True)
-    events_dir.mkdir(parents=True, exist_ok=True)
 
     all_events = []
-    for path in collect_csv_files(data_dir):
-        processed, events = analyze_file(path, cfg)
-        processed.to_csv(processed_dir / f"{path.stem}_processed.csv", index=False)
+    for path in collect_csv_files(DATA_DIR):
+        _, events = analyze_file(path, cfg)
         all_events.append(events)
 
-    events_df = (
-        pd.concat(all_events, ignore_index=True)
-        if all_events
-        else pd.DataFrame(columns=EVENT_COLUMNS)
-    )
-    events_df.to_csv(events_dir / "all_events.csv", index=False)
-    summarize_event_counts_by_file(events_df).to_csv(
-        events_dir / "event_counts_by_file.csv",
-        index=False,
-    )
-    summarize_events_by_file(events_df).to_csv(
-        events_dir / "event_summary_by_file.csv",
-        index=False,
-    )
-    summarize_events_by_gesture(events_df).to_csv(
-        events_dir / "event_summary_by_gesture.csv",
-        index=False,
-    )
-    return events_df
+    if not all_events:
+        return pd.DataFrame(columns=EVENT_COLUMNS)
+    return pd.concat(all_events, ignore_index=True)
 
 
 def print_report_table(label: str, table: pd.DataFrame) -> None:
