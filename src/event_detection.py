@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from .io_utils import split_by_phase
+from .detection_config import DetectionConfig
 
 
 EVENT_COLUMNS = [

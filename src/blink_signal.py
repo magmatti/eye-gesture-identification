@@ -23,4 +23,5 @@ def add_blink_signal(df: pd.DataFrame) -> pd.DataFrame:
     left = pd.to_numeric(out["LeftBlinkWeight"], errors="coerce")
     right = pd.to_numeric(out["RightBlinkWeight"], errors="coerce")
     out["blink_avg"] = (left + right) / 2.0
+    
     return out

@@ -53,7 +53,7 @@ def print_report_table(label: str, table: pd.DataFrame) -> None:
     print()
 
 
-# run analysis and print generated event reports
+# run analysis and print events
 def main() -> None:
     events = run_analysis(DetectionConfig())
     for label, table in [
