@@ -170,6 +170,7 @@ def summarize_event_counts_by_file(events: pd.DataFrame) -> pd.DataFrame:
             "saccade": "saccade_count",
         }
     )
+
     return summary[columns].sort_values("filename").reset_index(drop=True)
 
 
@@ -210,6 +211,7 @@ def _find_events_with_trim(
     events = find_events(df, mask_column, gesture_name, min_duration_ms, max_duration_ms)
     if events.empty:
         return events
+    
     return events[events["start_time_s"] * 1000.0 >= trim_start_ms].reset_index(drop=True)
 
 
@@ -219,6 +221,7 @@ def _peak_value(df: pd.DataFrame, gesture_name: str) -> float:
         return float(df["blink_avg"].max())
     if gesture_name == "fixation":
         return float(df["gaze_speed_smooth_deg_s"].mean())
+    
     return float(df["gaze_speed_smooth_deg_s"].max())
 
 
@@ -226,4 +229,5 @@ def _peak_value(df: pd.DataFrame, gesture_name: str) -> float:
 def _phase_value(df: pd.DataFrame) -> str:
     if "Phase" in df.columns and len(df):
         return str(df["Phase"].iloc[0])
+    
     return "recording"

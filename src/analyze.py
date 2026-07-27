@@ -29,13 +29,12 @@ def analyze_file(path: Path, cfg: DetectionConfig) -> tuple[pd.DataFrame, pd.Dat
     df = add_blink_signal(df)
     df = add_detection_masks(df, cfg)
     events = detect_all_events(df, cfg)
+
     return df, events
 
 
 # analyze every csv file in the data directory and return all detected events
-def run_analysis(cfg: DetectionConfig | None = None) -> pd.DataFrame:
-    cfg = cfg or DetectionConfig()
-
+def run_analysis(cfg: DetectionConfig) -> pd.DataFrame:
     all_events = []
     for path in collect_csv_files(DATA_DIR):
         _, events = analyze_file(path, cfg)
@@ -43,6 +42,7 @@ def run_analysis(cfg: DetectionConfig | None = None) -> pd.DataFrame:
 
     if not all_events:
         return pd.DataFrame(columns=EVENT_COLUMNS)
+    
     return pd.concat(all_events, ignore_index=True)
 
 
