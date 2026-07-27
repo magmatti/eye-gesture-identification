@@ -38,6 +38,7 @@ def quaternions_to_gaze_vectors(df: pd.DataFrame) -> np.ndarray:
     right_vectors = Rotation.from_quat(right_quat).apply(forward)
 
     gaze_vectors = left_vectors + right_vectors
+
     return _normalize_rows(gaze_vectors)
 
 
@@ -59,6 +60,7 @@ def add_gaze_speed(df: pd.DataFrame, smoothing_window: int = 5) -> pd.DataFrame:
     out["gaze_angle_step_deg"] = angle_step
     out["gaze_speed_deg_s"] = speed
     out["gaze_speed_smooth_deg_s"] = _smooth_gaze_speed(speed, out.index, smoothing_window)
+
     return out
 
 
@@ -66,6 +68,7 @@ def _add_empty_gaze_speed_columns(df: pd.DataFrame) -> pd.DataFrame:
     df["gaze_angle_step_deg"] = np.nan
     df["gaze_speed_deg_s"] = np.nan
     df["gaze_speed_smooth_deg_s"] = np.nan
+
     return df
 
 
@@ -73,6 +76,7 @@ def _add_gaze_vector_columns(df: pd.DataFrame, gaze_vectors: np.ndarray) -> pd.D
     df["gaze_vector_x"] = gaze_vectors[:, 0]
     df["gaze_vector_y"] = gaze_vectors[:, 1]
     df["gaze_vector_z"] = gaze_vectors[:, 2]
+
     return df
 
 
@@ -83,6 +87,7 @@ def _calculate_angle_steps_deg(gaze_vectors: np.ndarray) -> np.ndarray:
         dots = np.sum(gaze_vectors[1:] * gaze_vectors[:-1], axis=1)
         dots = np.clip(dots, -1.0, 1.0)
         angle_step[1:] = np.degrees(np.arccos(dots))
+
     return angle_step
 
 
@@ -95,6 +100,7 @@ def _calculate_gaze_speed_deg_s(angle_step: np.ndarray, time_s: pd.Series) -> np
         out=np.zeros(len(angle_step), dtype=float),
         where=dt_s > 0,
     )
+
     return np.nan_to_num(speed, nan=0.0, posinf=0.0, neginf=0.0)
 
 
@@ -115,4 +121,5 @@ def _smooth_gaze_speed(
 def _normalize_rows(values: np.ndarray) -> np.ndarray:
     norms = np.linalg.norm(values, axis=1, keepdims=True)
     norms = np.where(norms == 0.0, 1.0, norms)
+
     return values / norms
