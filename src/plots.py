@@ -68,36 +68,6 @@ def plot_combined_overview(df: pd.DataFrame, cfg: DetectionConfig):
     return fig, axes
 
 
-def plot_detected_events(df: pd.DataFrame, events: pd.DataFrame, cfg: DetectionConfig):
-    fig, ax = plt.subplots(figsize=(12, 4))
-    _plot_series(ax, df, "gaze_speed_smooth_deg_s", "Smoothed gaze speed", linewidth=1.5)
-    if "blink_avg" in df.columns:
-        ax.plot(
-            df["Time_s"],
-            df["blink_avg"] * cfg.saccade_speed_threshold_deg_s,
-            label="Blink average scaled",
-            alpha=0.6,
-        )
-
-    colors = {"blink": "tab:red", "saccade": "tab:orange", "fixation": "tab:green"}
-    for _, event in events.iterrows():
-        ax.axvspan(
-            event["start_time_s"],
-            event["end_time_s"],
-            color=colors.get(event["gesture"], "tab:gray"),
-            alpha=0.16,
-        )
-
-    ax.axhline(cfg.fixation_speed_threshold_deg_s, linestyle="--", label="Fixation threshold")
-    ax.axhline(cfg.saccade_speed_threshold_deg_s, linestyle="--", label="Saccade threshold")
-    ax.set_title(_title(df, "Detected events"))
-    ax.set_xlabel("Time [s]")
-    ax.set_ylabel("Speed [deg/s]")
-    ax.grid(alpha=0.3)
-    _legend_if_needed(ax)
-    return fig, ax
-
-
 def _plot_series(ax, df: pd.DataFrame, column: str, label: str, **kwargs) -> None:
     if column not in df.columns or df[column].dropna().empty:
         return
