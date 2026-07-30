@@ -32,26 +32,6 @@ def plot_smoothed_gaze_speed(df: pd.DataFrame, cfg: DetectionConfig):
     return fig, ax
 
 
-def _add_gaze_thresholds(ax, cfg: DetectionConfig) -> None:
-    ax.axhline(
-        cfg.fixation_speed_threshold_deg_s,
-        linestyle="--",
-        label="Fixation threshold",
-    )
-    ax.axhline(
-        cfg.saccade_speed_threshold_deg_s,
-        linestyle="--",
-        label="Saccade threshold",
-    )
-
-
-def _format_gaze_speed_axis(ax) -> None:
-    ax.set_xlabel("Time [s]")
-    ax.set_ylabel("Speed [deg/s]")
-    ax.grid(alpha=0.3)
-    _legend_if_needed(ax)
-
-
 def plot_blink_signal(df: pd.DataFrame, cfg: DetectionConfig):
     fig, ax = plt.subplots(figsize=(12, 4))
     if "LeftBlinkWeight" in df.columns:
@@ -70,28 +50,24 @@ def plot_blink_signal(df: pd.DataFrame, cfg: DetectionConfig):
     return fig, ax
 
 
-def plot_combined_overview(df: pd.DataFrame, cfg: DetectionConfig):
-    fig, axes = plt.subplots(2, 1, figsize=(12, 7), sharex=True)
-    speed_ax, blink_ax = axes
+def _add_gaze_thresholds(ax, cfg: DetectionConfig) -> None:
+    ax.axhline(
+        cfg.fixation_speed_threshold_deg_s,
+        linestyle="--",
+        label="Fixation threshold",
+    )
+    ax.axhline(
+        cfg.saccade_speed_threshold_deg_s,
+        linestyle="--",
+        label="Saccade threshold",
+    )
 
-    _plot_series(speed_ax, df, "gaze_speed_smooth_deg_s", "Smoothed gaze speed", linewidth=1.5)
-    speed_ax.axhline(cfg.fixation_speed_threshold_deg_s, linestyle="--", label="Fixation")
-    speed_ax.axhline(cfg.saccade_speed_threshold_deg_s, linestyle="--", label="Saccade")
-    speed_ax.set_ylabel("Speed [deg/s]")
-    speed_ax.grid(alpha=0.3)
-    _legend_if_needed(speed_ax)
 
-    _plot_series(blink_ax, df, "blink_avg", "Blink average", linewidth=1.5)
-    blink_ax.axhline(cfg.blink_threshold, linestyle="--", label="Blink")
-    blink_ax.set_xlabel("Time [s]")
-    blink_ax.set_ylabel("Blink weight")
-    blink_ax.set_ylim(-0.05, 1.05)
-    blink_ax.grid(alpha=0.3)
-    _legend_if_needed(blink_ax)
-
-    fig.suptitle(_title(df, "Threshold overview"))
-
-    return fig, axes
+def _format_gaze_speed_axis(ax) -> None:
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Speed [deg/s]")
+    ax.grid(alpha=0.3)
+    _legend_if_needed(ax)
 
 
 def _plot_series(ax, df: pd.DataFrame, column: str, label: str, **kwargs) -> None:
