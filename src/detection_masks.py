@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from .detection_config import DetectionConfig
+from .gesture_specs import BLINK, DETECTION_GESTURE_SPECS, FIXATION, SACCADE
 
 
 # lables samples in the recording as one of 3 gestures or none using selected threshold values
@@ -20,13 +21,13 @@ def add_detection_masks(df: pd.DataFrame, cfg: DetectionConfig) -> pd.DataFrame:
         <= cfg.fixation_speed_threshold_deg_s
     )
 
-    out["is_blink"] = raw_blink
-    out["is_saccade"] = raw_saccade & ~raw_blink
-    out["is_fixation"] = raw_fixation & ~raw_blink & ~raw_saccade
+    out[BLINK.mask_column] = raw_blink
+    out[SACCADE.mask_column] = raw_saccade & ~raw_blink
+    out[FIXATION.mask_column] = raw_fixation & ~raw_blink & ~raw_saccade
 
     out["detected_gesture"] = np.select(
-        [out["is_blink"], out["is_saccade"], out["is_fixation"]],
-        ["blink", "saccade", "fixation"],
+        [out[spec.mask_column] for spec in DETECTION_GESTURE_SPECS],
+        [spec.name for spec in DETECTION_GESTURE_SPECS],
         default="none",
     )
     

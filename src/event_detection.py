@@ -5,6 +5,11 @@ import pandas as pd
 
 from .io_utils import split_by_phase
 from .detection_config import DetectionConfig
+from .gesture_specs import (
+    DETECTION_GESTURE_SPECS,
+    GESTURE_SPECS_BY_NAME,
+    REPORT_GESTURE_SPECS,
+)
 
 
 EVENT_COLUMNS = [
@@ -82,36 +87,22 @@ def find_events(
 def detect_all_events(df: pd.DataFrame, cfg: DetectionConfig) -> pd.DataFrame:
     all_events = []
     for _, phase_df in split_by_phase(df).items():
-        all_events.append(
-            _find_events_with_trim(
-                phase_df,
-                "is_blink",
-                "blink",
-                cfg.min_blink_duration_ms,
-                cfg.max_blink_duration_ms,
-                cfg.trim_start_ms,
+        for spec in DETECTION_GESTURE_SPECS:
+            max_duration_ms = (
+                None
+                if spec.max_duration_attr is None
+                else getattr(cfg, spec.max_duration_attr)
             )
-        )
-        all_events.append(
-            _find_events_with_trim(
-                phase_df,
-                "is_saccade",
-                "saccade",
-                cfg.min_saccade_duration_ms,
-                cfg.max_saccade_duration_ms,
-                cfg.trim_start_ms,
+            all_events.append(
+                _find_events_with_trim(
+                    phase_df,
+                    spec.mask_column,
+                    spec.name,
+                    getattr(cfg, spec.min_duration_attr),
+                    max_duration_ms,
+                    cfg.trim_start_ms,
+                )
             )
-        )
-        all_events.append(
-            _find_events_with_trim(
-                phase_df,
-                "is_fixation",
-                "fixation",
-                cfg.min_fixation_duration_ms,
-                None,
-                cfg.trim_start_ms,
-            )
-        )
 
     if not all_events:
         return pd.DataFrame(columns=EVENT_COLUMNS)
@@ -147,7 +138,7 @@ def summarize_events_by_file(events: pd.DataFrame) -> pd.DataFrame:
 
 
 def summarize_event_counts_by_file(events: pd.DataFrame) -> pd.DataFrame:
-    columns = ["filename", "blink_count", "fixation_count", "saccade_count"]
+    columns = ["filename", *(spec.count_column for spec in REPORT_GESTURE_SPECS)]
     if events.empty:
         return pd.DataFrame(columns=columns)
 
@@ -159,16 +150,12 @@ def summarize_event_counts_by_file(events: pd.DataFrame) -> pd.DataFrame:
         .rename(columns={"source_file": "filename"})
     )
 
-    for gesture in ["blink", "fixation", "saccade"]:
-        if gesture not in summary.columns:
-            summary[gesture] = 0
+    for spec in REPORT_GESTURE_SPECS:
+        if spec.name not in summary.columns:
+            summary[spec.name] = 0
 
     summary = summary.rename(
-        columns={
-            "blink": "blink_count",
-            "fixation": "fixation_count",
-            "saccade": "saccade_count",
-        }
+        columns={spec.name: spec.count_column for spec in REPORT_GESTURE_SPECS}
     )
 
     return summary[columns].sort_values("filename").reset_index(drop=True)
@@ -217,12 +204,15 @@ def _find_events_with_trim(
 
 # pick the most useful signal value for reporting a detected event
 def _peak_value(df: pd.DataFrame, gesture_name: str) -> float:
-    if gesture_name == "blink":
-        return float(df["blink_avg"].max())
-    if gesture_name == "fixation":
-        return float(df["gaze_speed_smooth_deg_s"].mean())
-    
-    return float(df["gaze_speed_smooth_deg_s"].max())
+    spec = GESTURE_SPECS_BY_NAME.get(gesture_name)
+    if spec is None:
+        return float(df["gaze_speed_smooth_deg_s"].max())
+
+    values = df[spec.peak_column]
+    if spec.peak_aggregation == "mean":
+        return float(values.mean())
+
+    return float(values.max())
 
 
 # combined recordings carry a Phase column, single-gesture recordings do not
