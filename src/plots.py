@@ -3,6 +3,7 @@ from __future__ import annotations
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from .blink_signal import LEFT_BLINK_COLUMN, RIGHT_BLINK_COLUMN
 from .detection_config import DetectionConfig
 
 
@@ -34,10 +35,20 @@ def plot_smoothed_gaze_speed(df: pd.DataFrame, cfg: DetectionConfig):
 
 def plot_blink_signal(df: pd.DataFrame, cfg: DetectionConfig):
     fig, ax = plt.subplots(figsize=(12, 4))
-    if "LeftBlinkWeight" in df.columns:
-        ax.plot(df["Time_s"], df["LeftBlinkWeight"], label="Left blink weight", alpha=0.5)
-    if "RightBlinkWeight" in df.columns:
-        ax.plot(df["Time_s"], df["RightBlinkWeight"], label="Right blink weight", alpha=0.5)
+    if LEFT_BLINK_COLUMN in df.columns:
+        ax.plot(
+            df["Time_s"],
+            df[LEFT_BLINK_COLUMN],
+            label="Left blink weight",
+            alpha=0.5,
+        )
+    if RIGHT_BLINK_COLUMN in df.columns:
+        ax.plot(
+            df["Time_s"],
+            df[RIGHT_BLINK_COLUMN],
+            label="Right blink weight",
+            alpha=0.5,
+        )
     _plot_series(ax, df, "blink_avg", "Blink average", linewidth=2)
     ax.axhline(cfg.blink_threshold, linestyle="--", label="Blink threshold")
     ax.set_title(_title(df, "Blink signal"))

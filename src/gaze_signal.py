@@ -5,16 +5,22 @@ import pandas as pd
 from scipy.spatial.transform import Rotation
 
 
-GAZE_QUATERNION_COLUMNS = [
+LEFT_GAZE_QUATERNION_COLUMNS = [
     "LeftLocalRotX",
     "LeftLocalRotY",
     "LeftLocalRotZ",
     "LeftLocalRotW",
+]
+RIGHT_GAZE_QUATERNION_COLUMNS = [
     "RightLocalRotX",
     "RightLocalRotY",
     "RightLocalRotZ",
     "RightLocalRotW",
 ]
+
+GAZE_QUATERNION_COLUMNS = (
+    LEFT_GAZE_QUATERNION_COLUMNS + RIGHT_GAZE_QUATERNION_COLUMNS
+)
 
 FORWARD_VECTOR = np.array([0.0, 0.0, 1.0], dtype=float)
 
@@ -26,12 +32,8 @@ def has_gaze_columns(df: pd.DataFrame) -> bool:
 
 # converting left and right eye rotation quaternions into 3D gaze direction vectors
 def quaternions_to_gaze_vectors(df: pd.DataFrame) -> np.ndarray:
-    left_quat = df[
-        ["LeftLocalRotX", "LeftLocalRotY", "LeftLocalRotZ", "LeftLocalRotW"]
-    ].to_numpy(dtype=float)
-    right_quat = df[
-        ["RightLocalRotX", "RightLocalRotY", "RightLocalRotZ", "RightLocalRotW"]
-    ].to_numpy(dtype=float)
+    left_quat = df[LEFT_GAZE_QUATERNION_COLUMNS].to_numpy(dtype=float)
+    right_quat = df[RIGHT_GAZE_QUATERNION_COLUMNS].to_numpy(dtype=float)
 
     forward = np.tile(FORWARD_VECTOR, (len(df), 1))
     left_vectors = Rotation.from_quat(left_quat).apply(forward)
@@ -43,7 +45,7 @@ def quaternions_to_gaze_vectors(df: pd.DataFrame) -> np.ndarray:
 
 
 # calculating gaze speed out of gaze direction vectors
-def add_gaze_speed(df: pd.DataFrame, smoothing_window: int = 5) -> pd.DataFrame:
+def add_gaze_speed(df: pd.DataFrame, smoothing_window: int) -> pd.DataFrame:
     out = df.copy()
 
     if not has_gaze_columns(out):
