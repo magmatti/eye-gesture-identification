@@ -46,6 +46,15 @@ def run_analysis(cfg: DetectionConfig) -> pd.DataFrame:
     return pd.concat(all_events, ignore_index=True)
 
 
+def build_report_tables(events: pd.DataFrame) -> list[tuple[str, pd.DataFrame]]:
+    return [
+        ("Event counts by file", summarize_event_counts_by_file(events)),
+        ("Event summary by file", summarize_events_by_file(events)),
+        ("Event summary by gesture", summarize_events_by_gesture(events)),
+        ("All events", events),
+    ]
+
+
 def print_report_table(label: str, table: pd.DataFrame) -> None:
     print(label)
     print()
@@ -56,13 +65,8 @@ def print_report_table(label: str, table: pd.DataFrame) -> None:
 # run analysis and print events
 def main() -> None:
     events = run_analysis(DetectionConfig())
-    for label, table in [
-        ("event counts by file", summarize_event_counts_by_file(events)),
-        ("event summary by file", summarize_events_by_file(events)),
-        ("event summary by gesture", summarize_events_by_gesture(events)),
-        ("all events", events),
-    ]:
-        print_report_table(label, table)
+    for label, table in build_report_tables(events):
+        print_report_table(label.lower(), table)
 
 
 if __name__ == "__main__":
