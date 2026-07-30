@@ -4,7 +4,9 @@ import numpy as np
 import pandas as pd
 
 
-BLINK_COLUMNS = ["LeftBlinkWeight", "RightBlinkWeight"]
+LEFT_BLINK_COLUMN = "LeftBlinkWeight"
+RIGHT_BLINK_COLUMN = "RightBlinkWeight"
+BLINK_COLUMNS = [LEFT_BLINK_COLUMN, RIGHT_BLINK_COLUMN]
 
 
 def has_blink_columns(df: pd.DataFrame) -> bool:
@@ -20,7 +22,8 @@ def add_blink_signal(df: pd.DataFrame) -> pd.DataFrame:
         out["blink_avg"] = np.nan
         return out
 
-    left = pd.to_numeric(out["LeftBlinkWeight"], errors="coerce")
-    right = pd.to_numeric(out["RightBlinkWeight"], errors="coerce")
+    left = pd.to_numeric(out[LEFT_BLINK_COLUMN], errors="coerce")
+    right = pd.to_numeric(out[RIGHT_BLINK_COLUMN], errors="coerce")
     out["blink_avg"] = (left + right) / 2.0
+    
     return out

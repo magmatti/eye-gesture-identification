@@ -12,44 +12,50 @@ The project detects eye gesture events inside recordings with a threshold-based 
 4. Computes Meta blink average from left/right blink weights.
 5. Applies fixation, saccade, and blink thresholds.
 6. Extracts and counts detected gesture events.
-7. Saves processed CSVs, event tables, summaries, and plots.
+7. Prints event tables and summaries in the console; the same tables plus plots are viewed interactively in the Jupyter notebooks.
 
-## Create environment
+## Install uv
 
-If you do not have `conda` installed, install Miniconda first:
+Use official documentation: [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/)
 
-https://docs.conda.io/en/latest/miniconda.html
+Or if on macOS with homebrew installed:
 
 ```bash
-conda create --name eye-gesture-identification python=3.11
-conda activate eye-gesture-identification
-pip install -r requirements.txt
+brew install uv
 ```
 
-## Collect data
+## Set up the project
 
-The `collect_data.sh` script pulls saved `.csv` recordings from a connected Meta Quest headset into the local `data/` folder.
-
-Before using it:
-
-1. Install and configure `adb`: https://developer.android.com/tools/adb
-2. Connect the headset and allow USB debugging.
-3. Make the script executable:
+From the project root, synchronize the environment:
 
 ```bash
-chmod +x collect_data.sh
+uv sync
+```
+
+## Manage headset data
+
+The `headset_data_manipulation.sh` script manages `.csv` recordings stored on a connected Meta Quest Pro headset.
+
+Before using it, install and configure [Android Debug Bridge (adb)](https://developer.android.com/tools/adb), connect the headset, allow USB debugging, and make the script executable:
+
+```bash
+chmod +x headset_data_manipulation.sh
 ```
 
 Run it from the project root:
 
 ```bash
-./collect_data.sh
+./headset_data_manipulation.sh
 ```
 
-If a `data/` folder already exists, the script renames it to `dataset_YYYYMMDD_HHMMSS` before creating a fresh `data/` folder.
+Choose an operation from the menu:
+
+1. List `.csv` files stored on the headset.
+2. Collect them into `data/`; if `data/` folder already exists it is archived as `dataset_YYYYMMDD_HHMMSS`.
+3. Delete all captured .csv files from headset.
 
 ## Run project
 
 ```bash
-python -m src.analyze
+uv run -m src.analyze
 ```

@@ -7,6 +7,7 @@ import pandas as pd
 
 def collect_csv_files(data_dir: Path) -> list[Path]:
     data_dir = Path(data_dir)
+
     return sorted(data_dir.rglob("*.csv"))
 
 
@@ -14,7 +15,9 @@ def load_csv(path: Path) -> pd.DataFrame:
     path = Path(path)
     df = pd.read_csv(path)
     df["source_file"] = path.name
+
     return df
+
 
 # normalizes time (deletes null values), makes sure always starts at 0 seconds
 # converts time from ms to seconds
@@ -32,6 +35,7 @@ def normalize_time(df: pd.DataFrame) -> pd.DataFrame:
 
     start_ms = float(out["Time_ms"].iloc[0])
     out["Time_s"] = (out["Time_ms"].astype(float) - start_ms) / 1000.0
+
     return out
 
 
@@ -43,4 +47,5 @@ def split_by_phase(df: pd.DataFrame) -> dict[str, pd.DataFrame]:
             str(phase): part.copy().reset_index(drop=True)
             for phase, part in df.groupby("Phase", sort=False, dropna=False)
         }
+
     return {"recording": df.copy().reset_index(drop=True)}
