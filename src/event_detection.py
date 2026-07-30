@@ -52,9 +52,10 @@ def find_events(
     gesture_name: str,
     min_duration_ms: float,
     max_duration_ms: float | None = None,
+    phase: str | None = None,
 ) -> pd.DataFrame:
     rows = []
-    phase = _phase_value(df)
+    phase_value = _phase_value(df) if phase is None else phase
     source_file = str(df["source_file"].iloc[0]) if len(df) else "unknown"
 
     for start, end in contiguous_true_segments(df[mask_column].fillna(False).to_numpy()):
@@ -70,7 +71,7 @@ def find_events(
         rows.append(
             {
                 "source_file": source_file,
-                "phase": phase,
+                "phase": phase_value,
                 "gesture": gesture_name,
                 "start_time_s": start_time_s,
                 "end_time_s": end_time_s,
@@ -86,7 +87,7 @@ def find_events(
 # detect every supported gesture type, phase by phase, using configured thresholds
 def detect_all_events(df: pd.DataFrame, cfg: DetectionConfig) -> pd.DataFrame:
     all_events = []
-    for _, phase_df in split_by_phase(df).items():
+    for phase, phase_df in split_by_phase(df).items():
         for spec in DETECTION_GESTURE_SPECS:
             max_duration_ms = (
                 None
@@ -101,6 +102,7 @@ def detect_all_events(df: pd.DataFrame, cfg: DetectionConfig) -> pd.DataFrame:
                     getattr(cfg, spec.min_duration_attr),
                     max_duration_ms,
                     cfg.trim_start_ms,
+                    phase,
                 )
             )
 
@@ -194,8 +196,16 @@ def _find_events_with_trim(
     min_duration_ms: float,
     max_duration_ms: float | None,
     trim_start_ms: float,
+    phase: str,
 ) -> pd.DataFrame:
-    events = find_events(df, mask_column, gesture_name, min_duration_ms, max_duration_ms)
+    events = find_events(
+        df,
+        mask_column,
+        gesture_name,
+        min_duration_ms,
+        max_duration_ms,
+        phase,
+    )
     if events.empty:
         return events
     
@@ -215,7 +225,7 @@ def _peak_value(df: pd.DataFrame, gesture_name: str) -> float:
     return float(values.max())
 
 
-# combined recordings carry a Phase column, single-gesture recordings do not
+# preserve phase inference for direct find_events callers
 def _phase_value(df: pd.DataFrame) -> str:
     if "Phase" in df.columns and len(df):
         return str(df["Phase"].iloc[0])
