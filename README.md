@@ -11,8 +11,10 @@ The project detects eye gesture events inside recordings with a threshold-based 
 3. Computes binocular gaze speed in degrees per second.
 4. Computes Meta blink average from left/right blink weights.
 5. Applies fixation, saccade, and blink thresholds.
-6. Extracts and counts detected gesture events.
-7. Prints event tables and summaries in the console; the same tables plus plots are viewed interactively in the Jupyter notebooks.
+6. Extracts fixation, saccade, and blink events.
+7. Classifies saccade's move direction as `left`, `right`, `up`, `down`, or `unknown`.
+8. Prints event tables and summaries in the console.
+9. The same tables plus plots are viewed interactively in the Jupyter notebooks.
 
 ## Install uv
 

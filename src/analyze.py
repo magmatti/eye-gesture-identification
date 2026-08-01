@@ -13,9 +13,11 @@ from .event_detection import (
     summarize_event_counts_by_file,
     summarize_events_by_file,
     summarize_events_by_gesture,
+    summarize_saccade_directions_by_file,
 )
 from .gaze_signal import add_gaze_speed
 from .io_utils import collect_csv_files, load_csv, normalize_time
+from .saccade_direction import add_saccade_directions
 
 
 DATA_DIR = Path("data")
@@ -29,6 +31,7 @@ def analyze_file(path: Path, cfg: DetectionConfig) -> tuple[pd.DataFrame, pd.Dat
     df = add_blink_signal(df)
     df = add_detection_masks(df, cfg)
     events = detect_all_events(df, cfg)
+    events = add_saccade_directions(df, events, cfg)
 
     return df, events
 
@@ -49,6 +52,10 @@ def run_analysis(cfg: DetectionConfig) -> pd.DataFrame:
 def build_report_tables(events: pd.DataFrame) -> list[tuple[str, pd.DataFrame]]:
     return [
         ("Event counts by file", summarize_event_counts_by_file(events)),
+        (
+            "Saccade directions by file",
+            summarize_saccade_directions_by_file(events),
+        ),
         ("Event summary by file", summarize_events_by_file(events)),
         ("Event summary by gesture", summarize_events_by_gesture(events)),
         ("All events", events),

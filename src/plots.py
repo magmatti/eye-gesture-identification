@@ -61,6 +61,43 @@ def plot_blink_signal(df: pd.DataFrame, cfg: DetectionConfig):
     return fig, ax
 
 
+def plot_saccade_directions(events: pd.DataFrame):
+    fig, ax = plt.subplots(figsize=(7, 7))
+    saccades = events[
+        (events["gesture"] == "saccade")
+        & events["saccade_delta_horizontal_deg"].notna()
+        & events["saccade_delta_vertical_deg"].notna()
+    ]
+    colors = {
+        "left": "tab:blue",
+        "right": "tab:orange",
+        "up": "tab:green",
+        "down": "tab:red",
+        "unknown": "tab:gray",
+    }
+    for direction, color in colors.items():
+        points = saccades[saccades["saccade_direction"] == direction]
+        if points.empty:
+            continue
+        ax.scatter(
+            points["saccade_delta_horizontal_deg"],
+            points["saccade_delta_vertical_deg"],
+            label=direction,
+            color=color,
+            alpha=0.75,
+        )
+
+    ax.axhline(0.0, color="black", linewidth=0.8)
+    ax.axvline(0.0, color="black", linewidth=0.8)
+    ax.set_title("Head-relative saccade directions")
+    ax.set_xlabel("Horizontal gaze displacement [deg]")
+    ax.set_ylabel("Vertical gaze displacement [deg]")
+    ax.grid(alpha=0.3)
+    _legend_if_needed(ax)
+
+    return fig, ax
+
+
 def _add_gaze_thresholds(ax, cfg: DetectionConfig) -> None:
     ax.axhline(
         cfg.fixation_speed_threshold_deg_s,

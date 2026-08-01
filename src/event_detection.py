@@ -10,6 +10,7 @@ from .gesture_specs import (
     GESTURE_SPECS_BY_NAME,
     REPORT_GESTURE_SPECS,
 )
+from .saccade_direction import SACCADE_DIRECTION_COLUMNS
 
 
 EVENT_COLUMNS = [
@@ -21,6 +22,7 @@ EVENT_COLUMNS = [
     "duration_ms",
     "peak_value",
     "sample_count",
+    *SACCADE_DIRECTION_COLUMNS,
 ]
 
 
@@ -159,6 +161,33 @@ def summarize_event_counts_by_file(events: pd.DataFrame) -> pd.DataFrame:
     summary = summary.rename(
         columns={spec.name: spec.count_column for spec in REPORT_GESTURE_SPECS}
     )
+
+    return summary[columns].sort_values("filename").reset_index(drop=True)
+
+
+def summarize_saccade_directions_by_file(events: pd.DataFrame) -> pd.DataFrame:
+    directions = ["left", "right", "up", "down", "unknown"]
+    columns = ["filename", *(f"{direction}_count" for direction in directions)]
+    if events.empty:
+        return pd.DataFrame(columns=columns)
+
+    filenames = events[["source_file"]].drop_duplicates()
+    saccades = events[events["gesture"] == "saccade"]
+    counts = (
+        saccades.groupby(["source_file", "saccade_direction"])
+        .size()
+        .unstack(fill_value=0)
+        .reindex(columns=directions, fill_value=0)
+        .reset_index()
+    )
+    summary = filenames.merge(counts, on="source_file", how="left").fillna(0)
+    summary = summary.rename(
+        columns={
+            "source_file": "filename",
+            **{direction: f"{direction}_count" for direction in directions},
+        }
+    )
+    summary[columns[1:]] = summary[columns[1:]].astype(int)
 
     return summary[columns].sort_values("filename").reset_index(drop=True)
 

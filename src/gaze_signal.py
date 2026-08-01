@@ -24,10 +24,20 @@ GAZE_QUATERNION_COLUMNS = (
 
 FORWARD_VECTOR = np.array([0.0, 0.0, 1.0], dtype=float)
 
+GAZE_VECTOR_COLUMNS = ["gaze_vector_x", "gaze_vector_y", "gaze_vector_z"]
+
 
 # check if df has gaze columns
 def has_gaze_columns(df: pd.DataFrame) -> bool:
     return all(column in df.columns for column in GAZE_QUATERNION_COLUMNS)
+
+
+# normalizing gaze vectors e.g [2, 0, 0] -> [1, 0, 0]
+def normalize_rows(values: np.ndarray) -> np.ndarray:
+    norms = np.linalg.norm(values, axis=1, keepdims=True)
+    norms = np.where(norms == 0.0, 1.0, norms)
+
+    return values / norms
 
 
 # converting left and right eye rotation quaternions into 3D gaze direction vectors
@@ -41,7 +51,7 @@ def quaternions_to_gaze_vectors(df: pd.DataFrame) -> np.ndarray:
 
     gaze_vectors = left_vectors + right_vectors
 
-    return _normalize_rows(gaze_vectors)
+    return normalize_rows(gaze_vectors)
 
 
 # calculating gaze speed out of gaze direction vectors
@@ -117,11 +127,3 @@ def _smooth_gaze_speed(
         .rolling(window=max(1, int(smoothing_window)), center=True, min_periods=1)
         .mean()
     )
-
-
-# normalizing gaze vectors e.g [2, 0, 0] -> [1, 0, 0]
-def _normalize_rows(values: np.ndarray) -> np.ndarray:
-    norms = np.linalg.norm(values, axis=1, keepdims=True)
-    norms = np.where(norms == 0.0, 1.0, norms)
-
-    return values / norms
