@@ -10,7 +10,7 @@ from .gesture_specs import (
     GESTURE_SPECS_BY_NAME,
     REPORT_GESTURE_SPECS,
 )
-from .saccade_direction import SACCADE_DIRECTION_COLUMNS
+from .saccade_direction import SACCADE_DIRECTION_COLUMNS, SACCADE_DIRECTIONS
 
 
 EVENT_COLUMNS = [
@@ -165,31 +165,21 @@ def summarize_event_counts_by_file(events: pd.DataFrame) -> pd.DataFrame:
     return summary[columns].sort_values("filename").reset_index(drop=True)
 
 
+# count saccade directions per file, listing only files that contain saccades
 def summarize_saccade_directions_by_file(events: pd.DataFrame) -> pd.DataFrame:
-    directions = ["left", "right", "up", "down", "unknown"]
-    columns = ["filename", *(f"{direction}_count" for direction in directions)]
-    if events.empty:
+    columns = ["filename", *(f"{direction}_count" for direction in SACCADE_DIRECTIONS)]
+    saccades = events[events["gesture"] == "saccade"] if not events.empty else events
+    if saccades.empty:
         return pd.DataFrame(columns=columns)
 
-    filenames = events[["source_file"]].drop_duplicates()
-    saccades = events[events["gesture"] == "saccade"]
-    counts = (
-        saccades.groupby(["source_file", "saccade_direction"])
-        .size()
-        .unstack(fill_value=0)
-        .reindex(columns=directions, fill_value=0)
+    return (
+        pd.crosstab(saccades["source_file"], saccades["saccade_direction"])
+        .reindex(columns=SACCADE_DIRECTIONS, fill_value=0)
+        .rename(columns=lambda direction: f"{direction}_count")
+        .rename_axis(index="filename", columns=None)
+        .sort_index()
         .reset_index()
     )
-    summary = filenames.merge(counts, on="source_file", how="left").fillna(0)
-    summary = summary.rename(
-        columns={
-            "source_file": "filename",
-            **{direction: f"{direction}_count" for direction in directions},
-        }
-    )
-    summary[columns[1:]] = summary[columns[1:]].astype(int)
-
-    return summary[columns].sort_values("filename").reset_index(drop=True)
 
 
 def summarize_events_by_gesture(events: pd.DataFrame) -> pd.DataFrame:
