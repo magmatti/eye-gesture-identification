@@ -5,6 +5,12 @@ import pandas as pd
 
 from .blink_signal import LEFT_BLINK_COLUMN, RIGHT_BLINK_COLUMN
 from .detection_config import DetectionConfig
+from .saccade_direction import SACCADE_DIRECTIONS
+
+
+SACCADE_DIRECTION_COLORS = dict(
+    zip(SACCADE_DIRECTIONS, ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:gray"])
+)
 
 
 def plot_gaze_speed(df: pd.DataFrame, cfg: DetectionConfig):
@@ -68,14 +74,7 @@ def plot_saccade_directions(events: pd.DataFrame):
         & events["saccade_delta_horizontal_deg"].notna()
         & events["saccade_delta_vertical_deg"].notna()
     ]
-    colors = {
-        "left": "tab:blue",
-        "right": "tab:orange",
-        "up": "tab:green",
-        "down": "tab:red",
-        "unknown": "tab:gray",
-    }
-    for direction, color in colors.items():
+    for direction, color in SACCADE_DIRECTION_COLORS.items():
         points = saccades[saccades["saccade_direction"] == direction]
         if points.empty:
             continue
