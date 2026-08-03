@@ -10,71 +10,85 @@ set -e
 
 SOURCE="/sdcard/Android/data/com.Politechnika.VrEyeGestureAnalysis/files/"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DATA_DIR="$SCRIPT_DIR/data"
-ARCHIVE_DIR="$SCRIPT_DIR/dataset_$(date +'%Y%m%d_%H%M%S')"
 
-printf "1) List CSV files\n2) Collect CSV files\n3) Delete CSV files\n"
-read -r -p "Choose [1-3]: " CHOICE
+while true; do
+    printf "\n1) List CSV files\n2) Collect CSV files\n3) Delete CSV files\n0) Exit\n"
 
-case "$CHOICE" in
-    1|2|3) ;;
-    *) echo "Invalid option."; exit 1 ;;
-esac
+    if ! read -r -p "Choose [0-3]: " CHOICE; then
+        printf "\nInput closed. Exiting.\n"
+        exit 0
+    fi
 
-command -v adb >/dev/null 2>&1 || {
-    echo "adb is not installed or not available in PATH."
-    exit 1
-}
+    case "$CHOICE" in
+        0)
+            echo "Exiting."
+            exit 0
+            ;;
+        1|2|3)
+            ;;
+        *)
+            echo "Invalid option."
+            continue
+            ;;
+    esac
 
-DEVICE="$(adb devices | awk 'NR > 1 && $2 == "device" { print $1; exit }')"
+    if ! command -v adb >/dev/null 2>&1; then
+        echo "adb is not installed or not available in PATH."
+        continue
+    fi
 
-if [ -z "$DEVICE" ]; then
-    echo "No headset connected. Please connect your device and try again."
-    exit 1
-fi
+    DEVICE="$(adb devices | awk 'NR > 1 && $2 == "device" { print $1; exit }')"
 
-REMOTE_FILES="$(adb -s "$DEVICE" shell ls "$SOURCE" 2>/dev/null)" || {
-    echo "Could not read $SOURCE on the headset."
-    exit 1
-}
+    if [ -z "$DEVICE" ]; then
+        echo "No headset connected. Please connect your device and try again."
+        continue
+    fi
 
-CSV_FILES="$(printf "%s\n" "$REMOTE_FILES" | tr -d '\r' | grep -E '\.csv$' || true)"
+    if ! REMOTE_FILES="$(adb -s "$DEVICE" shell ls "$SOURCE" 2>/dev/null)"; then
+        echo "Could not read $SOURCE on the headset."
+        continue
+    fi
 
-if [ -z "$CSV_FILES" ]; then
-    echo "No .csv files found in $SOURCE."
-    [ "$CHOICE" = 2 ] && exit 1 || exit 0
-fi
+    CSV_FILES="$(printf "%s\n" "$REMOTE_FILES" | tr -d '\r' | grep -E '\.csv$' || true)"
 
-case "$CHOICE" in
-    1)
-        printf "%s\n" "$CSV_FILES"
-        ;;
-    2)
-        if [ -d "$DATA_DIR" ]; then
-            echo "Archiving existing data to $ARCHIVE_DIR"
-            mv "$DATA_DIR" "$ARCHIVE_DIR"
-        fi
+    if [ -z "$CSV_FILES" ]; then
+        echo "No .csv files found in $SOURCE."
+        continue
+    fi
 
-        mkdir -p "$DATA_DIR"
+    case "$CHOICE" in
+        1)
+            printf "%s\n" "$CSV_FILES"
+            ;;
+        2)
+            DATA_DIR="$SCRIPT_DIR/data/data_$(date +'%Y%m%d_%H%M%S')"
 
-        while IFS= read -r FILE; do
-            adb -s "$DEVICE" pull "$SOURCE$FILE" "$DATA_DIR/"
-        done <<< "$CSV_FILES"
+            while [ -e "$DATA_DIR" ]; do
+                sleep 1
+                DATA_DIR="$SCRIPT_DIR/data/data_$(date +'%Y%m%d_%H%M%S')"
+            done
 
-        COUNT="$(find "$DATA_DIR" -maxdepth 1 -name "*.csv" | wc -l | tr -d " ")"
-        echo "Pulled $COUNT CSV file(s) to $DATA_DIR"
-        ;;
-    3)
-        read -r -p "Delete all .csv files from the headset? [y/n] " RESPONSE
+            mkdir -p "$DATA_DIR"
 
-        case "$RESPONSE" in
-            [yY])
-                adb -s "$DEVICE" shell "rm ${SOURCE}*.csv"
-                echo "Deleted all .csv files from $SOURCE."
-                ;;
-            *)
-                echo "Cancelled."
-                ;;
-        esac
-        ;;
-esac
+            while IFS= read -r FILE; do
+                adb -s "$DEVICE" pull "$SOURCE$FILE" "$DATA_DIR/"
+            done <<< "$CSV_FILES"
+
+            COUNT="$(find "$DATA_DIR" -maxdepth 1 -name "*.csv" | wc -l | tr -d " ")"
+            echo "Pulled $COUNT CSV file(s) to $DATA_DIR"
+            ;;
+        3)
+            read -r -p "Delete all .csv files from the headset? [y/n] " RESPONSE
+
+            case "$RESPONSE" in
+                [yY])
+                    adb -s "$DEVICE" shell "rm ${SOURCE}*.csv"
+                    echo "Deleted all .csv files from $SOURCE."
+                    ;;
+                *)
+                    echo "Cancelled."
+                    ;;
+            esac
+            ;;
+    esac
+done
