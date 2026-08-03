@@ -5,6 +5,14 @@ from pathlib import Path
 import pandas as pd
 
 
+SCENARIO_BY_FILE_PREFIX = {
+    "BlinkData": "blink",
+    "FixationData": "fixation",
+    "SaccadeData": "saccade",
+    "CombinedGestureData": "combined",
+}
+
+
 def collect_csv_files(data_dir: Path) -> list[Path]:
     data_dir = Path(data_dir)
 
@@ -15,8 +23,17 @@ def load_csv(path: Path) -> pd.DataFrame:
     path = Path(path)
     df = pd.read_csv(path)
     df["source_file"] = path.name
+    df["participant"] = path.parent.name
+    df["scenario"] = scenario_from_filename(path.name)
 
     return df
+
+
+# map a recording filename to its test scenario based on the logger prefix
+def scenario_from_filename(filename: str) -> str:
+    prefix = str(filename).split("_", 1)[0]
+
+    return SCENARIO_BY_FILE_PREFIX.get(prefix, "unknown")
 
 
 # normalizes time (deletes null values), makes sure always starts at 0 seconds
