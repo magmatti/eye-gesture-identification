@@ -19,6 +19,13 @@ def collect_csv_files(data_dir: Path) -> list[Path]:
     return sorted(data_dir.rglob("*.csv"))
 
 
+# map a recording filename to its test scenario based on the logger prefix
+def scenario_from_filename(filename: str) -> str:
+    prefix = str(filename).split("_", 1)[0]
+
+    return SCENARIO_BY_FILE_PREFIX.get(prefix, "unknown")
+
+
 def load_csv(path: Path) -> pd.DataFrame:
     path = Path(path)
     df = pd.read_csv(path)
@@ -27,13 +34,6 @@ def load_csv(path: Path) -> pd.DataFrame:
     df["scenario"] = scenario_from_filename(path.name)
 
     return df
-
-
-# map a recording filename to its test scenario based on the logger prefix
-def scenario_from_filename(filename: str) -> str:
-    prefix = str(filename).split("_", 1)[0]
-
-    return SCENARIO_BY_FILE_PREFIX.get(prefix, "unknown")
 
 
 # normalizes time (deletes null values), makes sure always starts at 0 seconds
