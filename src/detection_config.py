@@ -17,3 +17,6 @@ class DetectionConfig:
     trim_start_ms: float = 300.0
     saccade_direction_context_ms: float = 100.0
     min_saccade_amplitude_deg: float = 2.0
+    saccade_match_max_latency_ms: float = 500.0
+    blink_beep_interval_s: float | None = 1.5
+    blink_beep_initial_delay_s: float = 2.0

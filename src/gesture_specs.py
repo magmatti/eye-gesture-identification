@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Literal, Mapping
-
+from typing import Literal
 
 PeakAggregation = Literal["max", "mean"]
 
@@ -61,9 +61,7 @@ GESTURE_SPECS = (BLINK, SACCADE, FIXATION)
 DETECTION_GESTURE_SPECS = tuple(
     sorted(GESTURE_SPECS, key=lambda spec: spec.detection_order)
 )
-REPORT_GESTURE_SPECS = tuple(
-    sorted(GESTURE_SPECS, key=lambda spec: spec.report_order)
-)
+REPORT_GESTURE_SPECS = tuple(sorted(GESTURE_SPECS, key=lambda spec: spec.report_order))
 GESTURE_SPECS_BY_NAME: Mapping[str, GestureSpec] = MappingProxyType(
     {spec.name: spec for spec in GESTURE_SPECS}
 )
