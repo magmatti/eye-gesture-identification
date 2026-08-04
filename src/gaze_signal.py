@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 from scipy.spatial.transform import Rotation
 
-
 LEFT_GAZE_QUATERNION_COLUMNS = [
     "LeftLocalRotX",
     "LeftLocalRotY",
@@ -18,9 +17,7 @@ RIGHT_GAZE_QUATERNION_COLUMNS = [
     "RightLocalRotW",
 ]
 
-GAZE_QUATERNION_COLUMNS = (
-    LEFT_GAZE_QUATERNION_COLUMNS + RIGHT_GAZE_QUATERNION_COLUMNS
-)
+GAZE_QUATERNION_COLUMNS = LEFT_GAZE_QUATERNION_COLUMNS + RIGHT_GAZE_QUATERNION_COLUMNS
 
 FORWARD_VECTOR = np.array([0.0, 0.0, 1.0], dtype=float)
 
@@ -71,7 +68,9 @@ def add_gaze_speed(df: pd.DataFrame, smoothing_window: int) -> pd.DataFrame:
     speed = _calculate_gaze_speed_deg_s(angle_step, out["Time_s"])
     out["gaze_angle_step_deg"] = angle_step
     out["gaze_speed_deg_s"] = speed
-    out["gaze_speed_smooth_deg_s"] = _smooth_gaze_speed(speed, out.index, smoothing_window)
+    out["gaze_speed_smooth_deg_s"] = _smooth_gaze_speed(
+        speed, out.index, smoothing_window
+    )
 
     return out
 
@@ -84,7 +83,9 @@ def _add_empty_gaze_speed_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _add_gaze_vector_columns(df: pd.DataFrame, gaze_vectors: np.ndarray) -> pd.DataFrame:
+def _add_gaze_vector_columns(
+    df: pd.DataFrame, gaze_vectors: np.ndarray
+) -> pd.DataFrame:
     df["gaze_vector_x"] = gaze_vectors[:, 0]
     df["gaze_vector_y"] = gaze_vectors[:, 1]
     df["gaze_vector_z"] = gaze_vectors[:, 2]
@@ -104,7 +105,9 @@ def _calculate_angle_steps_deg(gaze_vectors: np.ndarray) -> np.ndarray:
 
 
 # divide angle steps by sample time differences to get degrees per second
-def _calculate_gaze_speed_deg_s(angle_step: np.ndarray, time_s: pd.Series) -> np.ndarray:
+def _calculate_gaze_speed_deg_s(
+    angle_step: np.ndarray, time_s: pd.Series
+) -> np.ndarray:
     dt_s = time_s.diff().to_numpy(dtype=float)
     speed = np.divide(
         angle_step,

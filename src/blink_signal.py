@@ -3,7 +3,6 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-
 LEFT_BLINK_COLUMN = "LeftBlinkWeight"
 RIGHT_BLINK_COLUMN = "RightBlinkWeight"
 BLINK_COLUMNS = [LEFT_BLINK_COLUMN, RIGHT_BLINK_COLUMN]

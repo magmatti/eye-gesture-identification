@@ -7,9 +7,12 @@ from .blink_signal import LEFT_BLINK_COLUMN, RIGHT_BLINK_COLUMN
 from .detection_config import DetectionConfig
 from .saccade_direction import SACCADE_DIRECTIONS
 
-
 SACCADE_DIRECTION_COLORS = dict(
-    zip(SACCADE_DIRECTIONS, ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:gray"])
+    zip(
+        SACCADE_DIRECTIONS,
+        ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:gray"],
+        strict=False,
+    )
 )
 
 

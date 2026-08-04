@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 SCENARIO_BY_FILE_PREFIX = {
     "BlinkData": "blink",
     "FixationData": "fixation",
