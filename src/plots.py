@@ -19,7 +19,7 @@ def plot_gaze_speed(df: pd.DataFrame, cfg: DetectionConfig):
     _add_gaze_thresholds(ax, cfg)
     ax.set_title(_title(df, "Gaze speed"))
     _format_gaze_speed_axis(ax)
-    
+
     return fig, ax
 
 
@@ -132,5 +132,5 @@ def _legend_if_needed(ax) -> None:
 def _title(df: pd.DataFrame, prefix: str) -> str:
     if "source_file" in df.columns and len(df):
         return f"{prefix} - {df['source_file'].iloc[0]}"
-    
+
     return prefix
