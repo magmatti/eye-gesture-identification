@@ -3,17 +3,19 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from .io_utils import split_by_phase
 from .detection_config import DetectionConfig
 from .gesture_specs import (
     DETECTION_GESTURE_SPECS,
     GESTURE_SPECS_BY_NAME,
     REPORT_GESTURE_SPECS,
 )
-
+from .io_utils import split_by_phase
+from .saccade_direction import SACCADE_DIRECTION_COLUMNS, SACCADE_DIRECTIONS
 
 EVENT_COLUMNS = [
     "source_file",
+    "participant",
+    "scenario",
     "phase",
     "gesture",
     "start_time_s",
@@ -21,7 +23,10 @@ EVENT_COLUMNS = [
     "duration_ms",
     "peak_value",
     "sample_count",
+    *SACCADE_DIRECTION_COLUMNS,
 ]
+
+GROUP_COLUMNS = ["participant", "scenario"]
 
 
 # locate continuous true runs in a detection mask
@@ -56,9 +61,13 @@ def find_events(
 ) -> pd.DataFrame:
     rows = []
     phase_value = _phase_value(df) if phase is None else phase
-    source_file = str(df["source_file"].iloc[0]) if len(df) else "unknown"
+    source_file = _column_value(df, "source_file")
+    participant = _column_value(df, "participant")
+    scenario = _column_value(df, "scenario")
 
-    for start, end in contiguous_true_segments(df[mask_column].fillna(False).to_numpy()):
+    for start, end in contiguous_true_segments(
+        df[mask_column].fillna(False).to_numpy()
+    ):
         start_time_s = float(df["Time_s"].iloc[start])
         end_time_s = float(df["Time_s"].iloc[end])
         duration_ms = (end_time_s - start_time_s) * 1000.0
@@ -71,6 +80,8 @@ def find_events(
         rows.append(
             {
                 "source_file": source_file,
+                "participant": participant,
+                "scenario": scenario,
                 "phase": phase_value,
                 "gesture": gesture_name,
                 "start_time_s": start_time_s,
@@ -113,7 +124,69 @@ def detect_all_events(df: pd.DataFrame, cfg: DetectionConfig) -> pd.DataFrame:
     if events.empty:
         return pd.DataFrame(columns=EVENT_COLUMNS)
 
-    return events.sort_values(["source_file", "start_time_s", "gesture"]).reset_index(drop=True)
+    return events.sort_values(["source_file", "start_time_s", "gesture"]).reset_index(
+        drop=True
+    )
+
+
+# count events of each gesture type per participant and scenario
+def summarize_event_counts_by_scenario(events: pd.DataFrame) -> pd.DataFrame:
+    columns = [
+        *GROUP_COLUMNS,
+        "file_count",
+        *(spec.count_column for spec in REPORT_GESTURE_SPECS),
+    ]
+    if events.empty:
+        return pd.DataFrame(columns=columns)
+
+    counts = (
+        events.groupby([*GROUP_COLUMNS, "gesture"], dropna=False)
+        .size()
+        .unstack(fill_value=0)
+        .reset_index()
+    )
+    for spec in REPORT_GESTURE_SPECS:
+        if spec.name not in counts.columns:
+            counts[spec.name] = 0
+    counts = counts.rename(
+        columns={spec.name: spec.count_column for spec in REPORT_GESTURE_SPECS}
+    )
+
+    file_counts = (
+        events.groupby(GROUP_COLUMNS, dropna=False)["source_file"]
+        .nunique()
+        .rename("file_count")
+        .reset_index()
+    )
+
+    return (
+        file_counts.merge(counts, on=GROUP_COLUMNS)[columns]
+        .sort_values(GROUP_COLUMNS)
+        .reset_index(drop=True)
+    )
+
+
+# count saccade directions per participant and scenario
+def summarize_saccade_directions_by_scenario(events: pd.DataFrame) -> pd.DataFrame:
+    columns = [
+        *GROUP_COLUMNS,
+        *(f"{direction}_count" for direction in SACCADE_DIRECTIONS),
+    ]
+    saccades = events[events["gesture"] == "saccade"] if not events.empty else events
+    if saccades.empty:
+        return pd.DataFrame(columns=columns)
+
+    return (
+        pd.crosstab(
+            [saccades["participant"], saccades["scenario"]],
+            saccades["saccade_direction"],
+        )
+        .reindex(columns=SACCADE_DIRECTIONS, fill_value=0)
+        .rename(columns=lambda direction: f"{direction}_count")
+        .rename_axis(index=GROUP_COLUMNS, columns=None)
+        .sort_index()
+        .reset_index()
+    )
 
 
 def summarize_events_by_file(events: pd.DataFrame) -> pd.DataFrame:
@@ -163,6 +236,23 @@ def summarize_event_counts_by_file(events: pd.DataFrame) -> pd.DataFrame:
     return summary[columns].sort_values("filename").reset_index(drop=True)
 
 
+# count saccade directions per file, listing only files that contain saccades
+def summarize_saccade_directions_by_file(events: pd.DataFrame) -> pd.DataFrame:
+    columns = ["filename", *(f"{direction}_count" for direction in SACCADE_DIRECTIONS)]
+    saccades = events[events["gesture"] == "saccade"] if not events.empty else events
+    if saccades.empty:
+        return pd.DataFrame(columns=columns)
+
+    return (
+        pd.crosstab(saccades["source_file"], saccades["saccade_direction"])
+        .reindex(columns=SACCADE_DIRECTIONS, fill_value=0)
+        .rename(columns=lambda direction: f"{direction}_count")
+        .rename_axis(index="filename", columns=None)
+        .sort_index()
+        .reset_index()
+    )
+
+
 def summarize_events_by_gesture(events: pd.DataFrame) -> pd.DataFrame:
     if events.empty:
         return pd.DataFrame(
@@ -208,8 +298,10 @@ def _find_events_with_trim(
     )
     if events.empty:
         return events
-    
-    return events[events["start_time_s"] * 1000.0 >= trim_start_ms].reset_index(drop=True)
+
+    return events[events["start_time_s"] * 1000.0 >= trim_start_ms].reset_index(
+        drop=True
+    )
 
 
 # pick the most useful signal value for reporting a detected event
@@ -225,9 +317,17 @@ def _peak_value(df: pd.DataFrame, gesture_name: str) -> float:
     return float(values.max())
 
 
+# read a per-recording metadata value shared by every row of the samples frame
+def _column_value(df: pd.DataFrame, column: str) -> str:
+    if column in df.columns and len(df):
+        return str(df[column].iloc[0])
+
+    return "unknown"
+
+
 # preserve phase inference for direct find_events callers
 def _phase_value(df: pd.DataFrame) -> str:
     if "Phase" in df.columns and len(df):
         return str(df["Phase"].iloc[0])
-    
+
     return "recording"

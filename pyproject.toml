@@ -15,4 +15,20 @@ dependencies = [
 dev = [
     "ipykernel",
     "jupyterlab>=4.1",
+    "ruff>=0.16.1",
+]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E4",
+    "E7",
+    "E9",
+    "F",
+    "I",
+    "B",
+    "UP",
+    "RUF",
 ]

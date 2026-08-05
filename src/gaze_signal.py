@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 from scipy.spatial.transform import Rotation
 
-
 LEFT_GAZE_QUATERNION_COLUMNS = [
     "LeftLocalRotX",
     "LeftLocalRotY",
@@ -18,16 +17,24 @@ RIGHT_GAZE_QUATERNION_COLUMNS = [
     "RightLocalRotW",
 ]
 
-GAZE_QUATERNION_COLUMNS = (
-    LEFT_GAZE_QUATERNION_COLUMNS + RIGHT_GAZE_QUATERNION_COLUMNS
-)
+GAZE_QUATERNION_COLUMNS = LEFT_GAZE_QUATERNION_COLUMNS + RIGHT_GAZE_QUATERNION_COLUMNS
 
 FORWARD_VECTOR = np.array([0.0, 0.0, 1.0], dtype=float)
+
+GAZE_VECTOR_COLUMNS = ["gaze_vector_x", "gaze_vector_y", "gaze_vector_z"]
 
 
 # check if df has gaze columns
 def has_gaze_columns(df: pd.DataFrame) -> bool:
     return all(column in df.columns for column in GAZE_QUATERNION_COLUMNS)
+
+
+# normalizing gaze vectors e.g [2, 0, 0] -> [1, 0, 0]
+def normalize_rows(values: np.ndarray) -> np.ndarray:
+    norms = np.linalg.norm(values, axis=1, keepdims=True)
+    norms = np.where(norms == 0.0, 1.0, norms)
+
+    return values / norms
 
 
 # converting left and right eye rotation quaternions into 3D gaze direction vectors
@@ -41,7 +48,7 @@ def quaternions_to_gaze_vectors(df: pd.DataFrame) -> np.ndarray:
 
     gaze_vectors = left_vectors + right_vectors
 
-    return _normalize_rows(gaze_vectors)
+    return normalize_rows(gaze_vectors)
 
 
 # calculating gaze speed out of gaze direction vectors
@@ -61,7 +68,9 @@ def add_gaze_speed(df: pd.DataFrame, smoothing_window: int) -> pd.DataFrame:
     speed = _calculate_gaze_speed_deg_s(angle_step, out["Time_s"])
     out["gaze_angle_step_deg"] = angle_step
     out["gaze_speed_deg_s"] = speed
-    out["gaze_speed_smooth_deg_s"] = _smooth_gaze_speed(speed, out.index, smoothing_window)
+    out["gaze_speed_smooth_deg_s"] = _smooth_gaze_speed(
+        speed, out.index, smoothing_window
+    )
 
     return out
 
@@ -74,7 +83,9 @@ def _add_empty_gaze_speed_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _add_gaze_vector_columns(df: pd.DataFrame, gaze_vectors: np.ndarray) -> pd.DataFrame:
+def _add_gaze_vector_columns(
+    df: pd.DataFrame, gaze_vectors: np.ndarray
+) -> pd.DataFrame:
     df["gaze_vector_x"] = gaze_vectors[:, 0]
     df["gaze_vector_y"] = gaze_vectors[:, 1]
     df["gaze_vector_z"] = gaze_vectors[:, 2]
@@ -94,7 +105,9 @@ def _calculate_angle_steps_deg(gaze_vectors: np.ndarray) -> np.ndarray:
 
 
 # divide angle steps by sample time differences to get degrees per second
-def _calculate_gaze_speed_deg_s(angle_step: np.ndarray, time_s: pd.Series) -> np.ndarray:
+def _calculate_gaze_speed_deg_s(
+    angle_step: np.ndarray, time_s: pd.Series
+) -> np.ndarray:
     dt_s = time_s.diff().to_numpy(dtype=float)
     speed = np.divide(
         angle_step,
@@ -117,11 +130,3 @@ def _smooth_gaze_speed(
         .rolling(window=max(1, int(smoothing_window)), center=True, min_periods=1)
         .mean()
     )
-
-
-# normalizing gaze vectors e.g [2, 0, 0] -> [1, 0, 0]
-def _normalize_rows(values: np.ndarray) -> np.ndarray:
-    norms = np.linalg.norm(values, axis=1, keepdims=True)
-    norms = np.where(norms == 0.0, 1.0, norms)
-
-    return values / norms
