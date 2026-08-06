@@ -103,7 +103,10 @@ def build_report_tables(
     if not result.blink_targets.empty:
         tables.insert(
             3,
-            ("Blink detection vs beeps", summarize_blink_ground_truth(result.blink_targets)),
+            (
+                "Blink detection vs beeps",
+                summarize_blink_ground_truth(result.blink_targets),
+            ),
         )
 
     if verbose:
