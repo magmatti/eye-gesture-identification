@@ -130,6 +130,7 @@ def detect_all_events(df: pd.DataFrame, cfg: DetectionConfig) -> pd.DataFrame:
         drop=True
     )
 
+
 # reject saccades whose start or end lies within a blink guard interval
 def _remove_saccades_near_blinks(
     events: pd.DataFrame,
