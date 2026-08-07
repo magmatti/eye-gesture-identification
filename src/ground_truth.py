@@ -92,8 +92,6 @@ def build_expected_blinks(
     rows = []
     for phase, phase_df in split_by_phase(samples).items():
         scenario = str(phase_df["scenario"].iloc[0])
-        if "blink" not in EVALUATION_SCOPE[(scenario, phase)]:
-            continue
         if not _is_blink_target_phase(scenario, phase):
             continue
         phase_start_s = float(phase_df["Time_s"].iloc[0])
@@ -207,7 +205,7 @@ def _expected_beep_count(duration_s: float, cfg: ScenarioConfig) -> int:
     return int(window_s // cfg.beep_interval_s) + 1
 
 
-# identify phases where metronome beeps define expected blinks
+# metronome plays only here; evaluation scope is wider to count false positives
 def _is_blink_target_phase(scenario: str, phase: str) -> bool:
     return scenario == "blink" or (scenario == "combined" and phase == "Blink")
 

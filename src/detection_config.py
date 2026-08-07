@@ -11,7 +11,7 @@ class DetectionConfig:
     min_saccade_duration_ms: float = 20.0
     max_saccade_duration_ms: float = 150.0
     min_blink_duration_ms: float = 50.0
-    max_blink_duration_ms: float = 500.0
+    max_blink_duration_ms: float = 750.0
     smoothing_window: int = 5
     trim_start_ms: float = 300.0
     saccade_direction_context_ms: float = 100.0

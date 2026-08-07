@@ -41,7 +41,7 @@ def build_dataset_summary(
     )
 
 
-# report the class distribution among samples with an available gesture label
+# report the class distribution and unlabeled share among all samples
 def build_sample_coverage(samples: pd.DataFrame) -> pd.DataFrame:
     counts = (
         samples.groupby(["participant", "scenario"])[
@@ -56,9 +56,9 @@ def build_sample_coverage(samples: pd.DataFrame) -> pd.DataFrame:
             }
         )
     )
-    denominator = counts.sum(axis=1)
-    shares = counts.div(denominator.where(denominator > 0), axis=0)
     sample_counts = samples.groupby(["participant", "scenario"]).size()
+    shares = counts.div(sample_counts, axis=0)
+    shares["unlabeled_share"] = 1.0 - shares.sum(axis=1)
     shares.insert(0, "sample_count", sample_counts)
     return shares.reset_index()
 

@@ -113,13 +113,12 @@ def detect_all_events(df: pd.DataFrame, cfg: DetectionConfig) -> pd.DataFrame:
                 else getattr(cfg, spec.max_duration_attr)
             )
             all_events.append(
-                _find_events_with_trim(
+                find_events(
                     phase_df,
                     spec.mask_column,
                     spec.name,
                     getattr(cfg, spec.min_duration_attr),
                     max_duration_ms,
-                    cfg.trim_start_ms,
                     phase,
                 )
             )
@@ -130,30 +129,6 @@ def detect_all_events(df: pd.DataFrame, cfg: DetectionConfig) -> pd.DataFrame:
     return events.sort_values(["source_file", "start_time_s", "gesture"]).reset_index(
         drop=True
     )
-
-
-# apply event detection and drop events inside the startup trim window
-def _find_events_with_trim(
-    df: pd.DataFrame,
-    mask_column: str,
-    gesture_name: str,
-    min_duration_ms: float,
-    max_duration_ms: float | None,
-    trim_start_ms: float,
-    phase: str,
-) -> pd.DataFrame:
-    events = find_events(
-        df,
-        mask_column,
-        gesture_name,
-        min_duration_ms,
-        max_duration_ms,
-        phase,
-    )
-    return events[events["start_time_s"] * 1000.0 >= trim_start_ms].reset_index(
-        drop=True
-    )
-
 
 # reject saccades whose start or end lies within a blink guard interval
 def _remove_saccades_near_blinks(

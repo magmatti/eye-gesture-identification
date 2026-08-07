@@ -17,4 +17,9 @@ def add_detection_masks(df: pd.DataFrame, cfg: DetectionConfig) -> pd.DataFrame:
     out[BLINK.mask_column] = raw_blink
     out[SACCADE.mask_column] = raw_saccade & ~raw_blink
     out[FIXATION.mask_column] = raw_fixation & ~raw_blink
+    before_trim = out["Time_s"] * 1000.0 < cfg.trim_start_ms
+    out.loc[
+        before_trim,
+        [BLINK.mask_column, SACCADE.mask_column, FIXATION.mask_column],
+    ] = False
     return out
