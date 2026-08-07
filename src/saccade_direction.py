@@ -8,9 +8,9 @@ from .gaze_signal import GAZE_VECTOR_COLUMNS, normalize_rows
 from .io_utils import split_by_phase
 
 SACCADE_DIRECTIONS = ["left", "right", "up", "down", "unknown"]
-
 SACCADE_DIRECTION_COLUMNS = [
     "saccade_direction",
+    "saccade_direction_deg",
     "saccade_amplitude_deg",
     "saccade_delta_horizontal_deg",
     "saccade_delta_vertical_deg",
@@ -24,15 +24,12 @@ def add_saccade_directions(
     cfg: DetectionConfig,
 ) -> pd.DataFrame:
     out = _initialize_direction_columns(events)
-
     saccade_indices = out.index[out["gesture"] == "saccade"]
     if len(saccade_indices) == 0:
         return out
-
     out.loc[saccade_indices, "saccade_direction"] = "unknown"
     if not all(column in samples.columns for column in GAZE_VECTOR_COLUMNS):
         return out
-
     samples_by_phase = split_by_phase(samples)
     for index in saccade_indices:
         metrics = _compute_saccade_direction_metrics(
@@ -42,7 +39,6 @@ def add_saccade_directions(
         )
         for column, value in metrics.items():
             out.at[index, column] = value
-
     return out
 
 
@@ -50,7 +46,6 @@ def add_saccade_directions(
 def classify_direction(delta_horizontal: float, delta_vertical: float) -> str:
     if abs(delta_horizontal) >= abs(delta_vertical):
         return "right" if delta_horizontal > 0 else "left"
-
     return "up" if delta_vertical > 0 else "down"
 
 
@@ -61,7 +56,6 @@ def _initialize_direction_columns(events: pd.DataFrame) -> pd.DataFrame:
     for column in SACCADE_DIRECTION_COLUMNS:
         if column != "saccade_direction":
             out[column] = np.nan
-
     return out
 
 
@@ -74,7 +68,6 @@ def _compute_saccade_direction_metrics(
     phase_samples = samples_by_phase.get(str(event["phase"]))
     if phase_samples is None:
         return {}
-
     before, after = _extract_context_windows(
         phase_samples,
         event,
@@ -84,14 +77,12 @@ def _compute_saccade_direction_metrics(
     gaze_after = _compute_representative_gaze(after)
     if gaze_before is None or gaze_after is None:
         return {}
-
     metrics = _compute_direction_metrics(gaze_before, gaze_after)
     if metrics["saccade_amplitude_deg"] >= cfg.min_saccade_amplitude_deg:
         metrics["saccade_direction"] = classify_direction(
             metrics["saccade_delta_horizontal_deg"],
             metrics["saccade_delta_vertical_deg"],
         )
-
     return metrics
 
 
@@ -109,7 +100,6 @@ def _extract_context_windows(
         (samples["Time_s"] > event["end_time_s"])
         & (samples["Time_s"] <= event["end_time_s"] + context_s)
     ]
-
     return before, after
 
 
@@ -117,12 +107,10 @@ def _extract_context_windows(
 def _compute_representative_gaze(window: pd.DataFrame) -> np.ndarray | None:
     if window.empty:
         return None
-
     gaze = window[GAZE_VECTOR_COLUMNS].median().to_numpy(dtype=float)
     norm = np.linalg.norm(gaze)
     if not np.isfinite(gaze).all() or norm == 0.0:
         return None
-
     return normalize_rows(gaze[np.newaxis, :])[0]
 
 
@@ -135,14 +123,18 @@ def _compute_direction_metrics(
         gaze_before
     )
     horizontal_after, vertical_after = _compute_horizontal_vertical_angles(gaze_after)
+    delta_horizontal = horizontal_after - horizontal_before
+    delta_vertical = vertical_after - vertical_before
     amplitude = np.degrees(
         np.arccos(np.clip(np.dot(gaze_before, gaze_after), -1.0, 1.0))
     )
-
     return {
+        "saccade_direction_deg": float(
+            np.degrees(np.arctan2(delta_vertical, delta_horizontal))
+        ),
         "saccade_amplitude_deg": float(amplitude),
-        "saccade_delta_horizontal_deg": float(horizontal_after - horizontal_before),
-        "saccade_delta_vertical_deg": float(vertical_after - vertical_before),
+        "saccade_delta_horizontal_deg": float(delta_horizontal),
+        "saccade_delta_vertical_deg": float(delta_vertical),
     }
 
 
@@ -151,5 +143,4 @@ def _compute_horizontal_vertical_angles(gaze: np.ndarray) -> tuple[float, float]
     x, y, z = gaze
     horizontal = np.degrees(np.arctan2(x, z))
     vertical = np.degrees(np.arctan2(y, np.sqrt(x**2 + z**2)))
-
     return float(horizontal), float(vertical)
