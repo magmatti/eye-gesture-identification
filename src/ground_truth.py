@@ -169,13 +169,10 @@ def match_expected_to_detected(
                 - expected_event["expected_amplitude_deg"]
             )
             out.at[index, "direction_error_deg"] = float(
-                (
+                _wrap_degrees(
                     match["saccade_direction_deg"]
                     - expected_event["expected_direction_deg"]
-                    + 180.0
                 )
-                % 360.0
-                - 180.0
             )
     return out[MATCH_COLUMNS]
 

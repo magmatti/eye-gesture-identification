@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
@@ -8,11 +8,10 @@ import pandas as pd
 from .blink_signal import add_blink_signal
 from .detection_config import DetectionConfig, ScenarioConfig
 from .detection_masks import add_detection_masks
-from .event_detection import EVENT_COLUMNS, detect_all_events
+from .event_detection import detect_all_events
 from .gaze_signal import add_gaze_speed
 from .ground_truth import (
     EVALUATION_SCOPE,
-    MATCH_COLUMNS,
     build_expected_blinks,
     build_expected_saccades,
     label_detected_events,
@@ -31,16 +30,10 @@ DATA_DIR = Path("data")
 
 @dataclass(slots=True)
 class AnalysisResult:
-    samples: dict[str, pd.DataFrame] = field(default_factory=dict)
-    events: pd.DataFrame = field(
-        default_factory=lambda: pd.DataFrame(columns=EVENT_COLUMNS)
-    )
-    saccade_matches: pd.DataFrame = field(
-        default_factory=lambda: pd.DataFrame(columns=MATCH_COLUMNS)
-    )
-    blink_matches: pd.DataFrame = field(
-        default_factory=lambda: pd.DataFrame(columns=MATCH_COLUMNS)
-    )
+    samples: dict[str, pd.DataFrame]
+    events: pd.DataFrame
+    saccade_matches: pd.DataFrame
+    blink_matches: pd.DataFrame
 
 
 # process one recording and return enriched samples plus detected events
@@ -83,11 +76,15 @@ def run_analysis(
             scenario_cfg.blink_match_max_latency_ms / 1000.0,
         )
         matches = pd.concat([saccade_matches, blink_matches], ignore_index=True)
-        all_events.append(label_detected_events(events, matches, EVALUATION_SCOPE))
-        all_saccade_matches.append(saccade_matches)
-        all_blink_matches.append(blink_matches)
-    if not all_events:
-        return AnalysisResult()
+        events = label_detected_events(events, matches, EVALUATION_SCOPE)
+        if not events.empty:
+            all_events.append(events)
+        if not saccade_matches.empty:
+            all_saccade_matches.append(
+                saccade_matches.drop(columns="detected_event_index")
+            )
+        if not blink_matches.empty:
+            all_blink_matches.append(blink_matches.drop(columns="detected_event_index"))
     return AnalysisResult(
         samples=samples_by_file,
         events=pd.concat(all_events, ignore_index=True),

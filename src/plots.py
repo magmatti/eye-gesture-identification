@@ -5,15 +5,14 @@ import pandas as pd
 
 from .blink_signal import LEFT_BLINK_COLUMN, RIGHT_BLINK_COLUMN
 from .detection_config import DetectionConfig
-from .saccade_direction import SACCADE_DIRECTIONS
 
-SACCADE_DIRECTION_COLORS = dict(
-    zip(
-        SACCADE_DIRECTIONS,
-        ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:gray"],
-        strict=False,
-    )
-)
+SACCADE_DIRECTION_COLORS = {
+    "left": "tab:blue",
+    "right": "tab:orange",
+    "up": "tab:green",
+    "down": "tab:red",
+    "unknown": "tab:gray",
+}
 EVENT_COLORS = {
     "fixation": "tab:green",
     "saccade": "tab:red",
@@ -26,7 +25,11 @@ def plot_gaze_speed(df: pd.DataFrame, cfg: DetectionConfig):
     fig, ax = plt.subplots(figsize=(12, 4))
     _plot_series(ax, df, "gaze_speed_deg_s", "Raw gaze speed", alpha=0.45)
     _plot_series(ax, df, "gaze_speed_smooth_deg_s", "Smoothed gaze speed", linewidth=2)
-    _add_gaze_thresholds(ax, cfg)
+    ax.axhline(
+        cfg.velocity_threshold_deg_s,
+        linestyle="--",
+        label="Velocity threshold",
+    )
     ax.set_title(_title(df, "Gaze speed"))
     _format_gaze_speed_axis(ax)
     return fig, ax
@@ -163,15 +166,6 @@ def plot_threshold_sweep(sweep: pd.DataFrame):
     ax.grid(alpha=0.3)
     ax.legend()
     return fig, ax
-
-
-# add the single I-VT velocity threshold to a gaze-speed axis
-def _add_gaze_thresholds(ax, cfg: DetectionConfig) -> None:
-    ax.axhline(
-        cfg.velocity_threshold_deg_s,
-        linestyle="--",
-        label="Velocity threshold",
-    )
 
 
 # apply shared labels and legend to a gaze-speed axis

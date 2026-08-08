@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from .detection_config import DetectionConfig
-from .gaze_signal import GAZE_VECTOR_COLUMNS, normalize_rows
+from .gaze_signal import GAZE_VECTOR_COLUMNS, gaze_vector_to_angles_deg
 from .io_utils import split_by_phase
 
 SACCADE_DIRECTIONS = ["left", "right", "up", "down", "unknown"]
@@ -111,7 +111,7 @@ def _compute_representative_gaze(window: pd.DataFrame) -> np.ndarray | None:
     norm = np.linalg.norm(gaze)
     if not np.isfinite(gaze).all() or norm == 0.0:
         return None
-    return normalize_rows(gaze[np.newaxis, :])[0]
+    return gaze / norm
 
 
 # convert before/after gaze vectors into displacement and amplitude values
@@ -119,10 +119,8 @@ def _compute_direction_metrics(
     gaze_before: np.ndarray,
     gaze_after: np.ndarray,
 ) -> dict[str, float]:
-    horizontal_before, vertical_before = _compute_horizontal_vertical_angles(
-        gaze_before
-    )
-    horizontal_after, vertical_after = _compute_horizontal_vertical_angles(gaze_after)
+    horizontal_before, vertical_before = gaze_vector_to_angles_deg(gaze_before)
+    horizontal_after, vertical_after = gaze_vector_to_angles_deg(gaze_after)
     delta_horizontal = horizontal_after - horizontal_before
     delta_vertical = vertical_after - vertical_before
     amplitude = np.degrees(
@@ -136,11 +134,3 @@ def _compute_direction_metrics(
         "saccade_delta_horizontal_deg": float(delta_horizontal),
         "saccade_delta_vertical_deg": float(delta_vertical),
     }
-
-
-# convert a gaze vector into horizontal and vertical angles in degrees
-def _compute_horizontal_vertical_angles(gaze: np.ndarray) -> tuple[float, float]:
-    x, y, z = gaze
-    horizontal = np.degrees(np.arctan2(x, z))
-    vertical = np.degrees(np.arctan2(y, np.sqrt(x**2 + z**2)))
-    return float(horizontal), float(vertical)

@@ -24,6 +24,14 @@ FORWARD_VECTOR = np.array([0.0, 0.0, 1.0], dtype=float)
 GAZE_VECTOR_COLUMNS = ["gaze_vector_x", "gaze_vector_y", "gaze_vector_z"]
 
 
+# convert a gaze vector into horizontal and vertical angles in degrees
+def gaze_vector_to_angles_deg(gaze: np.ndarray) -> tuple[float, float]:
+    x, y, z = gaze
+    horizontal = np.degrees(np.arctan2(x, z))
+    vertical = np.degrees(np.arctan2(y, np.sqrt(x**2 + z**2)))
+    return float(horizontal), float(vertical)
+
+
 # check if df has gaze columns
 def has_gaze_columns(df: pd.DataFrame) -> bool:
     return all(column in df.columns for column in GAZE_QUATERNION_COLUMNS)
@@ -42,9 +50,8 @@ def quaternions_to_gaze_vectors(df: pd.DataFrame) -> np.ndarray:
     left_quat = df[LEFT_GAZE_QUATERNION_COLUMNS].to_numpy(dtype=float)
     right_quat = df[RIGHT_GAZE_QUATERNION_COLUMNS].to_numpy(dtype=float)
 
-    forward = np.tile(FORWARD_VECTOR, (len(df), 1))
-    left_vectors = Rotation.from_quat(left_quat).apply(forward)
-    right_vectors = Rotation.from_quat(right_quat).apply(forward)
+    left_vectors = Rotation.from_quat(left_quat).apply(FORWARD_VECTOR)
+    right_vectors = Rotation.from_quat(right_quat).apply(FORWARD_VECTOR)
 
     gaze_vectors = left_vectors + right_vectors
 
@@ -56,41 +63,21 @@ def add_gaze_speed(df: pd.DataFrame, smoothing_window: int) -> pd.DataFrame:
     out = df.copy()
 
     if not has_gaze_columns(out):
-        return _add_empty_gaze_speed_columns(out)
-
-    if "Time_s" not in out.columns:
-        raise ValueError("Time_s must exist before gaze speed can be calculated.")
+        out["gaze_speed_deg_s"] = np.nan
+        out["gaze_speed_smooth_deg_s"] = np.nan
+        return out
 
     gaze_vectors = quaternions_to_gaze_vectors(out)
-    out = _add_gaze_vector_columns(out, gaze_vectors)
+    out[GAZE_VECTOR_COLUMNS] = gaze_vectors
 
     angle_step = _calculate_angle_steps_deg(gaze_vectors)
     speed = _calculate_gaze_speed_deg_s(angle_step, out["Time_s"])
-    out["gaze_angle_step_deg"] = angle_step
     out["gaze_speed_deg_s"] = speed
     out["gaze_speed_smooth_deg_s"] = _smooth_gaze_speed(
         speed, out.index, smoothing_window
     )
 
     return out
-
-
-def _add_empty_gaze_speed_columns(df: pd.DataFrame) -> pd.DataFrame:
-    df["gaze_angle_step_deg"] = np.nan
-    df["gaze_speed_deg_s"] = np.nan
-    df["gaze_speed_smooth_deg_s"] = np.nan
-
-    return df
-
-
-def _add_gaze_vector_columns(
-    df: pd.DataFrame, gaze_vectors: np.ndarray
-) -> pd.DataFrame:
-    df["gaze_vector_x"] = gaze_vectors[:, 0]
-    df["gaze_vector_y"] = gaze_vectors[:, 1]
-    df["gaze_vector_z"] = gaze_vectors[:, 2]
-
-    return df
 
 
 # calculating gaze direction changes between each frame
@@ -116,7 +103,7 @@ def _calculate_gaze_speed_deg_s(
         where=dt_s > 0,
     )
 
-    return np.nan_to_num(speed, nan=0.0, posinf=0.0, neginf=0.0)
+    return speed
 
 
 # smooth short speed spikes with a centered average
@@ -127,6 +114,6 @@ def _smooth_gaze_speed(
 ) -> pd.Series:
     return (
         pd.Series(speed, index=index)
-        .rolling(window=max(1, int(smoothing_window)), center=True, min_periods=1)
+        .rolling(window=smoothing_window, center=True, min_periods=1)
         .mean()
     )

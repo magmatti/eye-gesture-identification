@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 
 from .detection_config import DetectionConfig
-from .gaze_signal import GAZE_VECTOR_COLUMNS
-from .gesture_specs import DETECTION_GESTURE_SPECS
+from .gaze_signal import GAZE_VECTOR_COLUMNS, gaze_vector_to_angles_deg
+from .gesture_specs import GESTURE_SPECS
 from .io_utils import split_by_phase
 from .saccade_direction import SACCADE_DIRECTION_COLUMNS
 
@@ -31,8 +31,6 @@ EVENT_COLUMNS = [
 # locate continuous true runs in a detection mask
 def contiguous_true_segments(mask) -> list[tuple[int, int]]:
     values = np.asarray(mask, dtype=bool)
-    if len(values) == 0:
-        return []
     segments: list[tuple[int, int]] = []
     start_idx: int | None = None
     for idx, value in enumerate(values):
@@ -52,11 +50,10 @@ def find_events(
     mask_column: str,
     gesture_name: str,
     min_duration_ms: float,
+    phase: str,
     max_duration_ms: float | None = None,
-    phase: str | None = None,
 ) -> pd.DataFrame:
     rows = []
-    phase_value = _phase_value(df) if phase is None else phase
     for start, end in contiguous_true_segments(df[mask_column].to_numpy()):
         start_time_s = float(df["Time_s"].iloc[start])
         end_time_s = float(df["Time_s"].iloc[end])
@@ -66,15 +63,17 @@ def find_events(
         if max_duration_ms is not None and duration_ms > max_duration_ms:
             continue
         segment = df.iloc[start : end + 1]
-        centroid_horizontal, centroid_vertical = _fixation_centroid(
-            segment, gesture_name
+        centroid_horizontal, centroid_vertical = (
+            _fixation_centroid(segment)
+            if gesture_name == "fixation"
+            else (np.nan, np.nan)
         )
         rows.append(
             {
                 "source_file": str(df["source_file"].iloc[0]),
                 "participant": str(df["participant"].iloc[0]),
                 "scenario": str(df["scenario"].iloc[0]),
-                "phase": phase_value,
+                "phase": phase,
                 "gesture": gesture_name,
                 "start_time_s": start_time_s,
                 "end_time_s": end_time_s,
@@ -106,25 +105,25 @@ def find_events(
 def detect_all_events(df: pd.DataFrame, cfg: DetectionConfig) -> pd.DataFrame:
     all_events = []
     for phase, phase_df in split_by_phase(df).items():
-        for spec in DETECTION_GESTURE_SPECS:
+        for spec in GESTURE_SPECS:
             max_duration_ms = (
                 None
                 if spec.max_duration_attr is None
                 else getattr(cfg, spec.max_duration_attr)
             )
-            all_events.append(
-                find_events(
-                    phase_df,
-                    spec.mask_column,
-                    spec.name,
-                    getattr(cfg, spec.min_duration_attr),
-                    max_duration_ms,
-                    phase,
-                )
+            gesture_events = find_events(
+                phase_df,
+                spec.mask_column,
+                spec.name,
+                getattr(cfg, spec.min_duration_attr),
+                phase,
+                max_duration_ms,
             )
-    events = pd.concat(all_events, ignore_index=True)
-    if events.empty:
+            if not gesture_events.empty:
+                all_events.append(gesture_events)
+    if not all_events:
         return pd.DataFrame(columns=EVENT_COLUMNS)
+    events = pd.concat(all_events, ignore_index=True)
     events = _remove_saccades_near_blinks(events, cfg.blink_guard_ms)
     return events.sort_values(["source_file", "start_time_s", "gesture"]).reset_index(
         drop=True
@@ -158,18 +157,6 @@ def _remove_saccades_near_blinks(
 # compute the angular centroid of gaze vectors within a fixation event
 def _fixation_centroid(
     samples: pd.DataFrame,
-    gesture_name: str,
 ) -> tuple[float, float]:
-    if gesture_name != "fixation":
-        return np.nan, np.nan
-    x, y, z = samples[GAZE_VECTOR_COLUMNS].mean().to_numpy(dtype=float)
-    horizontal = np.degrees(np.arctan2(x, z))
-    vertical = np.degrees(np.arctan2(y, np.sqrt(x**2 + z**2)))
-    return float(horizontal), float(vertical)
-
-
-# preserve phase inference for direct find_events callers
-def _phase_value(df: pd.DataFrame) -> str:
-    if "Phase" in df.columns:
-        return str(df["Phase"].iloc[0])
-    return "recording"
+    gaze = samples[GAZE_VECTOR_COLUMNS].mean().to_numpy(dtype=float)
+    return gaze_vector_to_angles_deg(gaze)
