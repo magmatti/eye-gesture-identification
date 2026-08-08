@@ -32,8 +32,7 @@ def load_csv(path: Path) -> pd.DataFrame:
     return df
 
 
-# normalizes time (deletes null values), makes sure always starts at 0 seconds
-# converts time from ms to seconds
+# converts time from ms to seconds, always starting at 0
 def normalize_time(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
     start_ms = float(out["Time_ms"].iloc[0])
