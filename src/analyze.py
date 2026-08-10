@@ -8,10 +8,11 @@ import pandas as pd
 from .blink_signal import add_blink_signal
 from .detection_config import DetectionConfig, ScenarioConfig
 from .detection_masks import add_detection_masks
-from .event_detection import detect_all_events
+from .event_detection import EVENT_COLUMNS, detect_all_events
 from .gaze_signal import add_gaze_speed
 from .ground_truth import (
     EVALUATION_SCOPE,
+    MATCH_COLUMNS,
     build_expected_blinks,
     build_expected_saccades,
     label_detected_events,
@@ -85,11 +86,26 @@ def run_analysis(
             )
         if not blink_matches.empty:
             all_blink_matches.append(blink_matches.drop(columns="detected_event_index"))
+    match_columns = [
+        column for column in MATCH_COLUMNS if column != "detected_event_index"
+    ]
     return AnalysisResult(
         samples=samples_by_file,
-        events=pd.concat(all_events, ignore_index=True),
-        saccade_matches=pd.concat(all_saccade_matches, ignore_index=True),
-        blink_matches=pd.concat(all_blink_matches, ignore_index=True),
+        events=(
+            pd.concat(all_events, ignore_index=True)
+            if all_events
+            else pd.DataFrame(columns=EVENT_COLUMNS)
+        ),
+        saccade_matches=(
+            pd.concat(all_saccade_matches, ignore_index=True)
+            if all_saccade_matches
+            else pd.DataFrame(columns=match_columns)
+        ),
+        blink_matches=(
+            pd.concat(all_blink_matches, ignore_index=True)
+            if all_blink_matches
+            else pd.DataFrame(columns=match_columns)
+        ),
     )
 
 

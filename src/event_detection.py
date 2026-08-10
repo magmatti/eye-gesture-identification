@@ -54,6 +54,13 @@ def find_events(
     max_duration_ms: float | None = None,
 ) -> pd.DataFrame:
     rows = []
+    event_metadata = {
+        "source_file": str(df["source_file"].iloc[0]),
+        "participant": str(df["participant"].iloc[0]),
+        "scenario": str(df["scenario"].iloc[0]),
+        "phase": phase,
+        "gesture": gesture_name,
+    }
     for start, end in contiguous_true_segments(df[mask_column].to_numpy()):
         start_time_s = float(df["Time_s"].iloc[start])
         end_time_s = float(df["Time_s"].iloc[end])
@@ -70,11 +77,7 @@ def find_events(
         )
         rows.append(
             {
-                "source_file": str(df["source_file"].iloc[0]),
-                "participant": str(df["participant"].iloc[0]),
-                "scenario": str(df["scenario"].iloc[0]),
-                "phase": phase,
-                "gesture": gesture_name,
+                **event_metadata,
                 "start_time_s": start_time_s,
                 "end_time_s": end_time_s,
                 "duration_ms": duration_ms,

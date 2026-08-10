@@ -96,14 +96,12 @@ def _calculate_gaze_speed_deg_s(
     angle_step: np.ndarray, time_s: pd.Series
 ) -> np.ndarray:
     dt_s = time_s.diff().to_numpy(dtype=float)
-    speed = np.divide(
+    return np.divide(
         angle_step,
         dt_s,
         out=np.zeros(len(angle_step), dtype=float),
         where=dt_s > 0,
     )
-
-    return speed
 
 
 # smooth short speed spikes with a centered average
