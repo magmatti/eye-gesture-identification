@@ -93,16 +93,18 @@ def plot_detected_events(
     events: pd.DataFrame,
     cfg: DetectionConfig,
     expected_times_s: pd.Series | None = None,
+    show_detected_events: bool = True,
 ):
     fig, ax = plot_gaze_speed(samples, cfg)
-    for event in events.itertuples():
-        ax.axvspan(
-            event.start_time_s,
-            event.end_time_s,
-            color=EVENT_COLORS[event.gesture],
-            alpha=0.18,
-            label=f"Detected {event.gesture}",
-        )
+    if show_detected_events:
+        for event in events.itertuples():
+            ax.axvspan(
+                event.start_time_s,
+                event.end_time_s,
+                color=EVENT_COLORS[event.gesture],
+                alpha=0.18,
+                label=f"Detected {event.gesture}",
+            )
     if expected_times_s is not None:
         for expected_time_s in expected_times_s:
             ax.axvline(expected_time_s, color="black", linewidth=1, alpha=0.55)
