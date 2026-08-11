@@ -114,7 +114,7 @@ def plot_detected_events(
 
 
 # plot continuous horizontal and vertical displacements by cardinal direction
-def plot_saccade_directions(events: pd.DataFrame):
+def plot_saccade_directions(events: pd.DataFrame, title: str):
     fig, ax = plt.subplots(figsize=(7, 7))
     saccades = events[
         (events["gesture"] == "saccade")
@@ -135,7 +135,7 @@ def plot_saccade_directions(events: pd.DataFrame):
     ax.axhline(0.0, color="black", linewidth=0.8)
     ax.axvline(0.0, color="black", linewidth=0.8)
     ax.set(
-        title="Head-relative saccade directions",
+        title=title,
         xlabel="Horizontal gaze displacement [deg]",
         ylabel="Vertical gaze displacement [deg]",
     )
