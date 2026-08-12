@@ -21,8 +21,6 @@ def add_blink_signal(df: pd.DataFrame) -> pd.DataFrame:
         out["blink_avg"] = np.nan
         return out
 
-    left = pd.to_numeric(out[LEFT_BLINK_COLUMN], errors="coerce")
-    right = pd.to_numeric(out[RIGHT_BLINK_COLUMN], errors="coerce")
-    out["blink_avg"] = (left + right) / 2.0
+    out["blink_avg"] = (out[LEFT_BLINK_COLUMN] + out[RIGHT_BLINK_COLUMN]) / 2.0
 
     return out

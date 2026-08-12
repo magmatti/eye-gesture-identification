@@ -5,18 +5,23 @@ from dataclasses import dataclass
 
 @dataclass(slots=True)
 class DetectionConfig:
-    fixation_speed_threshold_deg_s: float = 30.0
-    saccade_speed_threshold_deg_s: float = 120.0
+    velocity_threshold_deg_s: float = 120.0
     blink_threshold: float = 0.60
     min_fixation_duration_ms: float = 100.0
     min_saccade_duration_ms: float = 20.0
     max_saccade_duration_ms: float = 150.0
     min_blink_duration_ms: float = 50.0
-    max_blink_duration_ms: float = 500.0
+    max_blink_duration_ms: float = 750.0
     smoothing_window: int = 5
     trim_start_ms: float = 300.0
     saccade_direction_context_ms: float = 100.0
-    min_saccade_amplitude_deg: float = 2.0
+    min_saccade_amplitude_deg: float = 5.0
+    blink_guard_ms: float = 100.0
+
+
+@dataclass(slots=True)
+class ScenarioConfig:
+    beep_interval_s: float = 1.5
+    beep_initial_delay_s: float = 2.0
     saccade_match_max_latency_ms: float = 500.0
-    blink_beep_interval_s: float | None = 1.5
-    blink_beep_initial_delay_s: float = 2.0
+    blink_match_max_latency_ms: float = 1000.0
