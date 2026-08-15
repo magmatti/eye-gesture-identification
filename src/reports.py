@@ -274,3 +274,15 @@ def _add_rates(summary: pd.DataFrame) -> pd.DataFrame:
         2.0 * summary["precision"] * summary["recall"]
     ) / f1_denominator.where(f1_denominator > 0)
     return summary
+
+
+# aggregate a per-phase evaluation into a single row per participant
+def summarize_evaluation_by_participant(evaluation: pd.DataFrame) -> pd.DataFrame:
+    summary = (
+        evaluation[evaluation["participant"] != "TOTAL"]
+        .groupby("participant", as_index=False)[["expected_count", "tp", "fp", "fn"]]
+        .sum()
+    )
+    return _add_rates(summary)[
+        ["participant", "expected_count", "tp", "fp", "fn", "recall", "precision", "f1"]
+    ]

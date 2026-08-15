@@ -144,30 +144,26 @@ def plot_saccade_directions(events: pd.DataFrame, title: str):
     return fig, ax
 
 
-# plot saccade recall and precision across velocity thresholds
+# plot saccade recall and precision across velocity thresholds, per participant
 def plot_threshold_sweep(sweep: pd.DataFrame):
-    fig, ax = plt.subplots(figsize=(9, 5))
-    ax.plot(
-        sweep["velocity_threshold_deg_s"],
-        sweep["recall"],
-        marker="o",
-        label="Recall",
-    )
-    ax.plot(
-        sweep["velocity_threshold_deg_s"],
-        sweep["precision"],
-        marker="o",
-        label="Precision",
-    )
-    ax.set(
-        title="Saccade detection threshold sweep",
-        xlabel="Velocity threshold [deg/s]",
-        ylabel="Score",
-        ylim=(0.0, 1.05),
-    )
-    ax.grid(alpha=0.3)
-    ax.legend()
-    return fig, ax
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharey=True)
+    for metric, ax in zip(("recall", "precision"), axes, strict=True):
+        for participant, rows in sweep.groupby("participant"):
+            ax.plot(
+                rows["velocity_threshold_deg_s"],
+                rows[metric],
+                marker="o",
+                label=participant,
+            )
+        ax.set(
+            title=f"Saccade {metric} versus velocity threshold",
+            xlabel="Velocity threshold [deg/s]",
+            ylabel="Score",
+            ylim=(0.0, 1.05),
+        )
+        ax.grid(alpha=0.3)
+    axes[0].legend()
+    return fig, axes
 
 
 # apply shared labels and legend to a gaze-speed axis
