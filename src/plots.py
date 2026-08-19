@@ -21,15 +21,20 @@ EVENT_COLORS = {
 
 
 # plot raw and smoothed gaze speed on shared axes
-def plot_gaze_speed(df: pd.DataFrame, cfg: DetectionConfig):
+def plot_gaze_speed(
+    df: pd.DataFrame,
+    cfg: DetectionConfig,
+    show_velocity_threshold: bool = True,
+):
     fig, ax = plt.subplots(figsize=(12, 4))
     _plot_series(ax, df, "gaze_speed_deg_s", "Raw gaze speed", alpha=0.45)
     _plot_series(ax, df, "gaze_speed_smooth_deg_s", "Smoothed gaze speed", linewidth=2)
-    ax.axhline(
-        cfg.velocity_threshold_deg_s,
-        linestyle="--",
-        label="Velocity threshold",
-    )
+    if show_velocity_threshold:
+        ax.axhline(
+            cfg.velocity_threshold_deg_s,
+            linestyle="--",
+            label="Velocity threshold",
+        )
     ax.set_title(_title(df, "Gaze speed"))
     _format_gaze_speed_axis(ax)
     return fig, ax
@@ -94,8 +99,9 @@ def plot_detected_events(
     cfg: DetectionConfig,
     expected_times_s: pd.Series | None = None,
     show_detected_events: bool = True,
+    show_velocity_threshold: bool = True,
 ):
-    fig, ax = plot_gaze_speed(samples, cfg)
+    fig, ax = plot_gaze_speed(samples, cfg, show_velocity_threshold)
     if show_detected_events:
         for event in events.itertuples():
             ax.axvspan(
