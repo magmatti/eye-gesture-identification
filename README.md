@@ -2,7 +2,7 @@
 
 Project for eye tracking events identification based on data from a Meta Quest Pro headset.
 
-It detects and classifies three eye tracking events: fixations, saccades and blinks. It is based on the velocity-threshold method (I-VT) described by [Salvucci & Goldberg (2000)](https://www.cs.drexel.edu/~dds26/publications/Salvucci-ETRA00.pdf), extended with saccade direction classification. Detected events are compared against the target movements and blink cues recorded by the companion [Unity application](https://github.com/magmatti/vr-eye-gesture-analysis), which makes it possible to measure how accurately events are recognised.
+It detects and classifies three eye tracking events: fixations, saccades and blinks. It is based on the velocity-threshold method (I-VT) described by [Salvucci & Goldberg (2000)](https://www.cs.drexel.edu/~dds26/publications/Salvucci-ETRA00.pdf), extended with saccade direction classification. Detected events are compared against the target movements and blink cues recorded by the companion [Unity application](https://github.com/magmatti/vr-eye-gesture-analysis), which makes it possible to estimate how accurately events are recognised.
 
 ## Functionality overview
 
@@ -71,4 +71,9 @@ For a quick summary of the results in the console, run from the project root:
 uv run -m src.analyze
 ```
 
-The complete set of result tables is available in `identification_output.ipynb`, and all plots in `dataset_plots.ipynb`.
+Complete results and plots are available in four notebooks:
+
+- `identification_output.ipynb` - Dataset statistics and detection evaluation tables
+- `blink_weights_per_participant.ipynb` - Blink weights plots grouped by participant
+- `gaze_speed_per_participant.ipynb` - Gaze speed plots grouped by participant
+- `event_analysis.ipynb` - Event analysis plots and effects of detection parameters
